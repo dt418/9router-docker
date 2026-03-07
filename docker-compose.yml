@@ -1,0 +1,25 @@
+services:
+  9router:
+    build: .
+    container_name: 9router
+    restart: unless-stopped
+    volumes:
+      - ./data:/var/lib/9router
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.managed=true
+      - traefik.docker.network=proxy
+
+      # Router
+      - traefik.http.routers.9router.entrypoints=web
+      - traefik.http.routers.9router.rule=Host(`9router.danhthanh.dev`)
+      - traefik.http.routers.9router.middlewares=sslheader@docker,authelia@docker
+
+      # Service
+      - traefik.http.services.9router.loadbalancer.server.port=20128
+
+networks:
+  proxy:
+    external: true
