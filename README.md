@@ -15,7 +15,7 @@
   [![Downloads](https://img.shields.io/npm/dm/9router.svg)](https://www.npmjs.com/package/9router)
   [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/decolua/9router/blob/main/LICENSE)
   
-  [🚀 Quick Start](#-quick-start) • [💡 Features](#-key-features) • [📖 Setup](#-setup-guide) • [🌐 Website](https://9router.com)
+  [🚀 Quick Start](#-quick-start) • [💡 Features](#-key-features) • [📝 Changelog](#-changelog) • [📖 Setup](#-setup-guide) • [🌐 Website](https://9router.com)
 
   [🇻🇳 Tiếng Việt](./i18n/README.vi.md) • [🇨🇳 中文](./i18n/README.zh-CN.md)
 </div>
@@ -113,6 +113,16 @@ PORT=20128 HOSTNAME=0.0.0.0 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run 
 Default URLs:
 - Dashboard: `http://localhost:20128/dashboard`
 - OpenAI-compatible API: `http://localhost:20128/v1`
+
+---
+
+## 📝 Changelog
+
+Release notes are tracked in [`CHANGELOG.md`](./CHANGELOG.md).
+
+Latest updates:
+- `Unreleased`: Added API key visibility toggle (eye icon) on the Endpoint dashboard page.
+- `v0.2.66` (2026-02-06): Added Cursor provider support, expanded model/provider catalog updates, improved quota/usage UX, and fixed auth/local-network/login edge cases.
 
 ---
 
