@@ -6,10 +6,10 @@ WORKDIR /app
 # copy dependency files first (better cache)
 COPY package.json package-lock.json* ./
 
-RUN npm ci --include=dev --no-audit --no-fund --prefer-offline \
-	--fetch-retries=5 --fetch-retry-factor=2 \
-	--fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 \
-	&& test -x /app/node_modules/.bin/next
+# install dependencies
+RUN npm ci --include=dev --no-audit --no-fund \
+    --fetch-retries=5 --fetch-retry-factor=2 \
+    --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 # copy source
 COPY . .
@@ -40,4 +40,4 @@ COPY --from=builder /app/open-sse ./open-sse
 
 EXPOSE 20128
 
-CMD ["node","server.js"]
+CMD ["node", "server.js"]
