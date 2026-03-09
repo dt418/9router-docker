@@ -70,3 +70,6 @@ start.sh
 
 #agents
 .agents
+
+*.swp
+*.swo
