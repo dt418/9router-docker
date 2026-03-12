@@ -3,8 +3,12 @@ services:
     build: .
     container_name: 9router
     restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=${DATA_DIR:-/var/lib/9router}
     volumes:
-      - ./data:/var/lib/9router
+      - ./data:${DATA_DIR:-/var/lib/9router}
     networks:
       - proxy
     labels:
