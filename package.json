@@ -37,7 +37,7 @@
     "sql.js": "^1.14.1",
     "undici": "^7.24.5",
     "uuid": "^13.0.0",
-    "zustand": "^5.0.10"
+    "zustand": "^5.0.12"
   },
   "optionalDependencies": {
     "better-sqlite3": "^12.6.2"
