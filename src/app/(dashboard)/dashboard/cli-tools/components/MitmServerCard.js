@@ -13,10 +13,11 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [sudoPassword, setSudoPassword] = useState("");
   const [selectedApiKey, setSelectedApiKey] = useState("");
-  const [message, setMessage] = useState(null);
-  const [pendingAction, setPendingAction] = useState(null); // "start" | "stop"
+  const [pendingAction, setPendingAction] = useState(null);
+  const [modalError, setModalError] = useState(null);
 
   const isWindows = typeof navigator !== "undefined" && navigator.userAgent?.includes("Windows");
+  const isAdmin = status?.isAdmin !== false;
 
   useEffect(() => {
     if (apiKeys?.length > 0 && !selectedApiKey) {
@@ -47,49 +48,39 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
     } else {
       setPendingAction(action);
       setShowPasswordModal(true);
-      setMessage(null);
+      setModalError(null);
     }
   };
 
   const doAction = async (action, password) => {
     setLoading(true);
-    setMessage(null);
     try {
-      if (action === "start") {
+      if (action === "trust-cert") {
+        await fetch("/api/cli-tools/antigravity-mitm", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "trust-cert", sudoPassword: password }),
+        });
+      } else if (action === "start") {
         const keyToUse = selectedApiKey?.trim()
           || (apiKeys?.length > 0 ? apiKeys[0].key : null)
           || (!cloudEnabled ? "sk_9router" : null);
-
-        const res = await fetch("/api/cli-tools/antigravity-mitm", {
+        await fetch("/api/cli-tools/antigravity-mitm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ apiKey: keyToUse, sudoPassword: password }),
         });
-        const data = await res.json();
-        if (res.ok) {
-          setMessage({ type: "success", text: "Server started" });
-        } else {
-          setMessage({ type: "error", text: data.error || "Failed to start server" });
-        }
       } else {
-        const res = await fetch("/api/cli-tools/antigravity-mitm", {
+        await fetch("/api/cli-tools/antigravity-mitm", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sudoPassword: password }),
         });
-        const data = await res.json();
-        if (res.ok) {
-          setMessage({ type: "success", text: "Server stopped — all DNS cleared" });
-        } else {
-          setMessage({ type: "error", text: data.error || "Failed to stop server" });
-        }
       }
       setShowPasswordModal(false);
       setSudoPassword("");
       await fetchStatus();
-    } catch (error) {
-      setMessage({ type: "error", text: error.message });
-    } finally {
+    } catch { /* ignore */ } finally {
       setLoading(false);
       setPendingAction(null);
     }
@@ -97,7 +88,7 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
 
   const handleConfirmPassword = () => {
     if (!sudoPassword.trim()) {
-      setMessage({ type: "error", text: "Sudo password is required" });
+      setModalError("Sudo password is required");
       return;
     }
     doAction(pendingAction, sudoPassword);
@@ -120,14 +111,15 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
                 <Badge variant="default" size="sm">Stopped</Badge>
               )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-text-muted">
+            <div className="flex items-center gap-1 text-xs text-text-muted" data-i18n-skip="true">
               {[
                 { label: "Cert", ok: status?.certExists },
+                { label: "Trusted", ok: status?.certTrusted },
                 { label: "Server", ok: isRunning },
               ].map(({ label, ok }) => (
                 <span key={label} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded ${ok ? "text-green-600" : "text-text-muted"}`}>
-                  <span className={`material-symbols-outlined text-[12px]`}>
-                    {ok ? "check_circle" : "radio_button_unchecked"}
+                  <span className="material-symbols-outlined text-[12px]">
+                    {ok ? "check_circle" : "cancel"}
                   </span>
                   {label}
                 </span>
@@ -145,7 +137,7 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
             </p>
           </div>
 
-          {/* API Key selector (only when stopped, to pick key for start) */}
+          {/* API Key selector (only when stopped) */}
           {!isRunning && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-text-muted shrink-0">API Key</span>
@@ -165,15 +157,18 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
             </div>
           )}
 
-          {message && (
-            <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
-              <span className="material-symbols-outlined text-[14px]">{message.type === "success" ? "check_circle" : "error"}</span>
-              <span>{message.text}</span>
-            </div>
-          )}
-
-          {/* Action button */}
-          <div className="flex items-center gap-2">
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 flex-wrap" data-i18n-skip="true">
+            {status?.certExists && !status?.certTrusted && (
+              <button
+                onClick={() => handleAction("trust-cert")}
+                disabled={loading}
+                className="px-4 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 font-medium text-xs flex items-center gap-1.5 hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                Trust Cert
+              </button>
+            )}
             {isRunning ? (
               <button
                 onClick={() => handleAction("stop")}
@@ -186,7 +181,7 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
             ) : (
               <button
                 onClick={() => handleAction("start")}
-                disabled={loading}
+                disabled={loading || (isWindows && !isAdmin)}
                 className="px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary font-medium text-xs flex items-center gap-1.5 hover:bg-primary/20 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">play_circle</span>
@@ -199,10 +194,10 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
           </div>
 
           {/* Windows admin warning */}
-          {!isRunning && isWindows && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
-              <span className="material-symbols-outlined text-[14px]">warning</span>
-              <span>Windows: Run 9Router terminal as Administrator</span>
+          {isWindows && !isAdmin && (
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600 border border-red-500/20">
+              <span className="material-symbols-outlined text-[14px]">shield_lock</span>
+              <span>Administrator required — restart 9Router as Administrator to use MITM</span>
             </div>
           )}
         </div>
@@ -224,14 +219,14 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
               onChange={(e) => setSudoPassword(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !loading) handleConfirmPassword(); }}
             />
-            {message && (
+            {modalError && (
               <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600">
                 <span className="material-symbols-outlined text-[14px]">error</span>
-                <span>{message.text}</span>
+                <span>{modalError}</span>
               </div>
             )}
             <div className="flex items-center justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => { setShowPasswordModal(false); setSudoPassword(""); setMessage(null); }} disabled={loading}>
+              <Button variant="ghost" size="sm" onClick={() => { setShowPasswordModal(false); setSudoPassword(""); setModalError(null); }} disabled={loading}>
                 Cancel
               </Button>
               <Button variant="primary" size="sm" onClick={handleConfirmPassword} loading={loading}>

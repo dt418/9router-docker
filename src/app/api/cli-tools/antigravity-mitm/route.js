@@ -7,6 +7,7 @@ import {
   stopServer,
   enableToolDNS,
   disableToolDNS,
+  trustCert,
   getCachedPassword,
   setCachedPassword,
   loadEncryptedPassword,
@@ -22,6 +23,16 @@ function getPassword(provided) {
   return provided || getCachedPassword() || null;
 }
 
+function checkIsAdmin() {
+  if (!isWin) return true;
+  try {
+    require("child_process").execSync("net session >nul 2>&1", { windowsHide: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // GET - Full MITM status (server + per-tool DNS)
 export async function GET() {
   try {
@@ -30,8 +41,10 @@ export async function GET() {
       running: status.running,
       pid: status.pid || null,
       certExists: status.certExists || false,
+      certTrusted: status.certTrusted || false,
       dnsStatus: status.dnsStatus || {},
-      hasCachedPassword: !!getCachedPassword(),
+      hasCachedPassword: !!getCachedPassword() || !!(await loadEncryptedPassword()),
+      isAdmin: checkIsAdmin(),
     });
   } catch (error) {
     console.log("Error getting MITM status:", error.message);
@@ -100,8 +113,13 @@ export async function PATCH(request) {
       await enableToolDNS(tool, pwd);
     } else if (action === "disable") {
       await disableToolDNS(tool, pwd);
+    } else if (action === "trust-cert") {
+      await trustCert(pwd);
+      if (!isWin && sudoPassword) setCachedPassword(sudoPassword);
+      const status = await getMitmStatus();
+      return NextResponse.json({ success: true, certTrusted: status.certTrusted });
     } else {
-      return NextResponse.json({ error: "action must be enable or disable" }, { status: 400 });
+      return NextResponse.json({ error: "action must be enable, disable, or trust-cert" }, { status: 400 });
     }
 
     if (!isWin && sudoPassword) setCachedPassword(sudoPassword);

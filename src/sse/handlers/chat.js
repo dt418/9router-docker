@@ -12,7 +12,7 @@ import { getModelInfo, getComboModels } from "../services/model.js";
 import { handleChatCore } from "open-sse/handlers/chatCore.js";
 import { errorResponse, unavailableResponse } from "open-sse/utils/error.js";
 import { handleComboChat } from "open-sse/services/combo.js";
-import { HTTP_STATUS } from "open-sse/config/constants.js";
+import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
 import { detectFormatByEndpoint } from "open-sse/translator/formats.js";
 import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
@@ -84,12 +84,19 @@ export async function handleChat(request, clientRawRequest = null) {
   // Check if model is a combo (has multiple models with fallback)
   const comboModels = await getComboModels(modelStr);
   if (comboModels) {
-    log.info("CHAT", `Combo "${modelStr}" with ${comboModels.length} models`);
+    // Check for combo-specific strategy first, fallback to global
+    const comboStrategies = settings.comboStrategies || {};
+    const comboSpecificStrategy = comboStrategies[modelStr]?.fallbackStrategy;
+    const comboStrategy = comboSpecificStrategy || settings.comboStrategy || "fallback";
+    
+    log.info("CHAT", `Combo "${modelStr}" with ${comboModels.length} models (strategy: ${comboStrategy})`);
     return handleComboChat({
       body,
       models: comboModels,
       handleSingleModel: (b, m) => handleSingleModelChat(b, m, clientRawRequest, request, apiKey),
-      log
+      log,
+      comboName: modelStr,
+      comboStrategy
     });
   }
 
@@ -107,12 +114,20 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   if (!modelInfo.provider) {
     const comboModels = await getComboModels(modelStr);
     if (comboModels) {
-      log.info("CHAT", `Combo "${modelStr}" with ${comboModels.length} models`);
+      const chatSettings = await getSettings();
+      // Check for combo-specific strategy first, fallback to global
+      const comboStrategies = chatSettings.comboStrategies || {};
+      const comboSpecificStrategy = comboStrategies[modelStr]?.fallbackStrategy;
+      const comboStrategy = comboSpecificStrategy || chatSettings.comboStrategy || "fallback";
+      
+      log.info("CHAT", `Combo "${modelStr}" with ${comboModels.length} models (strategy: ${comboStrategy})`);
       return handleComboChat({
         body,
         models: comboModels,
-        handleSingleModel: (b, m) => handleSingleModelChat(b, m, clientRawRequest, request, apiKey, forceSourceFormat),
-        log
+        handleSingleModel: (b, m) => handleSingleModelChat(b, m, clientRawRequest, request, apiKey),
+        log,
+        comboName: modelStr,
+        comboStrategy
       });
     }
     log.warn("CHAT", "Invalid model format", { model: modelStr });
@@ -132,12 +147,12 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   const userAgent = request?.headers?.get("user-agent") || "";
 
   // Try with available accounts (fallback on errors)
-  let excludeConnectionId = null;
+  const excludeConnectionIds = new Set();
   let lastError = null;
   let lastStatus = null;
 
   while (true) {
-    const credentials = await getProviderCredentials(provider, excludeConnectionId, model);
+    const credentials = await getProviderCredentials(provider, excludeConnectionIds, model);
 
     // All accounts unavailable
     if (!credentials || credentials.allRateLimited) {
@@ -147,17 +162,16 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
         log.warn("CHAT", `[${provider}/${model}] ${errorMsg} (${credentials.retryAfterHuman})`);
         return unavailableResponse(status, `[${provider}/${model}] ${errorMsg}`, credentials.retryAfter, credentials.retryAfterHuman);
       }
-      if (!excludeConnectionId) {
-        log.error("AUTH", `No credentials for provider: ${provider}`);
-        return errorResponse(HTTP_STATUS.BAD_REQUEST, `No credentials for provider: ${provider}`);
+      if (excludeConnectionIds.size === 0) {
+        log.warn("AUTH", `No active credentials for provider: ${provider}`);
+        return errorResponse(HTTP_STATUS.NOT_FOUND, `No active credentials for provider: ${provider}`);
       }
       log.warn("CHAT", "No more accounts available", { provider });
       return errorResponse(lastStatus || HTTP_STATUS.SERVICE_UNAVAILABLE, lastError || "All accounts unavailable");
     }
 
     // Log account selection
-    const accountId = credentials.connectionId.slice(0, 8);
-    log.info("AUTH", `Using ${provider} account: ${accountId}...`);
+    log.info("AUTH", `\x1b[32mUsing ${provider} account: ${credentials.connectionName}\x1b[0m`);
 
     const refreshedCredentials = await checkAndRefreshToken(provider, credentials);
 
@@ -172,6 +186,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
     }
 
     // Use shared chatCore
+    const chatSettings = await getSettings();
     const result = await handleChatCore({
       body: { ...body, model: `${provider}/${model}` },
       modelInfo: { provider, model },
@@ -181,6 +196,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       connectionId: credentials.connectionId,
       userAgent,
       apiKey,
+      ccFilterNaming: !!chatSettings.ccFilterNaming,
       // Detect source format by endpoint + body
       sourceFormatOverride: request?.url ? detectFormatByEndpoint(new URL(request.url).pathname, body) : null,
       onCredentialsRefreshed: async (newCreds) => {
@@ -202,8 +218,8 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, provider, model);
 
     if (shouldFallback) {
-      log.warn("AUTH", `Account ${accountId}... unavailable (${result.status}), trying fallback`);
-      excludeConnectionId = credentials.connectionId;
+      log.warn("AUTH", `Account ${credentials.connectionName} unavailable (${result.status}), trying fallback`);
+      excludeConnectionIds.add(credentials.connectionId);
       lastError = result.error;
       lastStatus = result.status;
       continue;

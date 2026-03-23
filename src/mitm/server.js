@@ -3,111 +3,77 @@ const fs = require("fs");
 const path = require("path");
 const dns = require("dns");
 const { promisify } = require("util");
-
-const INTERNAL_REQUEST_HEADER = { name: "x-request-source", value: "local" };
-
-// All intercepted domains across all tools
-const TARGET_HOSTS = [
-  "daily-cloudcode-pa.googleapis.com",
-  "cloudcode-pa.googleapis.com",
-  "api.individual.githubcopilot.com",
-];
-
-const LOCAL_PORT = 443;
-const ROUTER_URL = "http://localhost:20128/v1/chat/completions";
-const API_KEY = process.env.ROUTER_API_KEY;
+const { log, err } = require("./logger");
+const { TARGET_HOSTS, URL_PATTERNS, getToolForHost } = require("./config");
 const { DATA_DIR, MITM_DIR } = require("./paths");
-const DB_FILE = path.join(DATA_DIR, "db.json");
-
-const ENABLE_FILE_LOG = false;
-
-if (!API_KEY) {
-  console.error("❌ ROUTER_API_KEY required");
-  process.exit(1);
-}
-
 const { getCertForDomain } = require("./cert/generate");
 
-// Certificate cache for performance
-const certCache = new Map();
+const DB_FILE = path.join(DATA_DIR, "db.json");
+const LOCAL_PORT = 443;
+const ENABLE_FILE_LOG = false;
+const LOG_DIR = path.join(DATA_DIR, "logs", "mitm");
+const INTERNAL_REQUEST_HEADER = { name: "x-request-source", value: "local" };
 
-// SNI callback for dynamic certificate generation
-function sniCallback(servername, cb) {
-  try {
-    // Check cache first
-    if (certCache.has(servername)) {
-      const cached = certCache.get(servername);
-      return cb(null, cached);
-    }
+if (ENABLE_FILE_LOG && !fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
 
-    // Generate new cert for this domain
-    const certData = getCertForDomain(servername);
-    if (!certData) {
-      return cb(new Error(`Failed to generate cert for ${servername}`));
-    }
-
-    // Create secure context
-    const ctx = require("tls").createSecureContext({
-      key: certData.key,
-      cert: certData.cert
-    });
-
-    // Cache it
-    certCache.set(servername, ctx);
-    console.log(`✅ Generated cert for: ${servername}`);
-
-    cb(null, ctx);
-  } catch (error) {
-    console.error(`❌ SNI error for ${servername}:`, error.message);
-    cb(error);
-  }
+// Load handlers — dev/ overrides handlers/ for private implementations
+function loadHandler(name) {
+  try { return require(`./dev/${name}`); } catch {}
+  return require(`./handlers/${name}`);
 }
 
-// Load Root CA for default context
-const certDir = MITM_DIR;
-const rootCAKeyPath = path.join(certDir, "rootCA.key");
-const rootCACertPath = path.join(certDir, "rootCA.crt");
+const handlers = {
+  antigravity: loadHandler("antigravity"),
+  copilot: loadHandler("copilot"),
+  kiro: loadHandler("kiro"),
+  cursor: loadHandler("cursor"),
+};
+
+// ── SSL / SNI ─────────────────────────────────────────────────
+
+const certCache = new Map();
+
+function sniCallback(servername, cb) {
+  try {
+    if (certCache.has(servername)) return cb(null, certCache.get(servername));
+    const certData = getCertForDomain(servername);
+    if (!certData) return cb(new Error(`Failed to generate cert for ${servername}`));
+    const ctx = require("tls").createSecureContext({ key: certData.key, cert: certData.cert });
+    certCache.set(servername, ctx);
+    log(`🔐 Cert generated: ${servername}`);
+    cb(null, ctx);
+  } catch (e) {
+    err(`SNI error for ${servername}: ${e.message}`);
+    cb(e);
+  }
+}
 
 let sslOptions;
 try {
   sslOptions = {
-    key: fs.readFileSync(rootCAKeyPath),
-    cert: fs.readFileSync(rootCACertPath),
+    key: fs.readFileSync(path.join(MITM_DIR, "rootCA.key")),
+    cert: fs.readFileSync(path.join(MITM_DIR, "rootCA.crt")),
     SNICallback: sniCallback
   };
 } catch (e) {
-  console.error(`❌ Root CA not found in ${certDir}: ${e.message}`);
+  err(`Root CA not found: ${e.message}`);
   process.exit(1);
 }
 
-// Antigravity: Gemini generateContent endpoints
-const ANTIGRAVITY_URL_PATTERNS = [":generateContent", ":streamGenerateContent"];
-// Copilot: OpenAI-compatible + Anthropic endpoints
-const COPILOT_URL_PATTERNS = ["/chat/completions", "/v1/messages", "/responses"];
-
-const LOG_DIR = path.join(__dirname, "../../logs/mitm");
-if (ENABLE_FILE_LOG && !fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
-
-function saveRequestLog(url, bodyBuffer) {
-  if (!ENABLE_FILE_LOG) return;
-  try {
-    const ts = new Date().toISOString().replace(/[:.]/g, "-");
-    const urlSlug = url.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 60);
-    const filePath = path.join(LOG_DIR, `${ts}_${urlSlug}.json`);
-    const body = JSON.parse(bodyBuffer.toString());
-    fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
-  } catch { /* ignore */ }
-}
+// ── Helpers ───────────────────────────────────────────────────
 
 const cachedTargetIPs = {};
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 async function resolveTargetIP(hostname) {
-  if (cachedTargetIPs[hostname]) return cachedTargetIPs[hostname];
+  const cached = cachedTargetIPs[hostname];
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.ip;
   const resolver = new dns.Resolver();
   resolver.setServers(["8.8.8.8"]);
   const resolve4 = promisify(resolver.resolve4.bind(resolver));
   const addresses = await resolve4(hostname);
-  cachedTargetIPs[hostname] = addresses[0];
-  return cachedTargetIPs[hostname];
+  cachedTargetIPs[hostname] = { ip: addresses[0], ts: Date.now() };
+  return cachedTargetIPs[hostname].ip;
 }
 
 function collectBodyRaw(req) {
@@ -119,11 +85,17 @@ function collectBodyRaw(req) {
   });
 }
 
-// Extract model from URL path (Gemini) or body (OpenAI/Anthropic)
+// Extract model from URL path (Gemini), body (OpenAI/Anthropic), or Kiro conversationState
 function extractModel(url, body) {
   const urlMatch = url.match(/\/models\/([^/:]+)/);
   if (urlMatch) return urlMatch[1];
-  try { return JSON.parse(body.toString()).model || null; } catch { return null; }
+  try {
+    const parsed = JSON.parse(body.toString());
+    if (parsed.conversationState) {
+      return parsed.conversationState.currentMessage?.userInputMessage?.modelId || null;
+    }
+    return parsed.model || null;
+  } catch { return null; }
 }
 
 function getMappedModel(tool, model) {
@@ -131,23 +103,31 @@ function getMappedModel(tool, model) {
   try {
     if (!fs.existsSync(DB_FILE)) return null;
     const db = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-    return db.mitmAlias?.[tool]?.[model] || null;
-  } catch {
-    return null;
-  }
+    const aliases = db.mitmAlias?.[tool];
+    if (!aliases) return null;
+    if (aliases[model]) return aliases[model];
+    // Prefix match fallback
+    const prefixKey = Object.keys(aliases).find(k => k && aliases[k] && (model.startsWith(k) || k.startsWith(model)));
+    return prefixKey ? aliases[prefixKey] : null;
+  } catch { return null; }
+}
+
+function saveRequestLog(url, bodyBuffer) {
+  if (!ENABLE_FILE_LOG) return;
+  try {
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const slug = url.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 60);
+    const body = JSON.parse(bodyBuffer.toString());
+    fs.writeFileSync(path.join(LOG_DIR, `${ts}_${slug}.json`), JSON.stringify(body, null, 2));
+  } catch { /* ignore */ }
 }
 
 /**
- * Determine which tool this request belongs to based on hostname
+ * Forward request to real upstream.
+ * Optional onResponse(rawBuffer) callback — if provided, tees the response
+ * so it's both forwarded to client AND passed to the callback for inspection.
  */
-function getToolForHost(host) {
-  const h = (host || "").split(":")[0];
-  if (h === "api.individual.githubcopilot.com") return "copilot";
-  if (h === "daily-cloudcode-pa.googleapis.com" || h === "cloudcode-pa.googleapis.com") return "antigravity";
-  return null;
-}
-
-async function passthrough(req, res, bodyBuffer) {
+async function passthrough(req, res, bodyBuffer, onResponse) {
   const targetHost = (req.headers.host || TARGET_HOSTS[0]).split(":")[0];
   const targetIP = await resolveTargetIP(targetHost);
 
@@ -161,11 +141,23 @@ async function passthrough(req, res, bodyBuffer) {
     rejectUnauthorized: false
   }, (forwardRes) => {
     res.writeHead(forwardRes.statusCode, forwardRes.headers);
-    forwardRes.pipe(res);
+
+    if (!onResponse) {
+      forwardRes.pipe(res);
+      return;
+    }
+
+    // Tee: forward to client AND buffer for callback
+    const chunks = [];
+    forwardRes.on("data", chunk => { chunks.push(chunk); res.write(chunk); });
+    forwardRes.on("end", () => {
+      res.end();
+      try { onResponse(Buffer.concat(chunks), forwardRes.headers); } catch { /* ignore */ }
+    });
   });
 
-  forwardReq.on("error", (err) => {
-    console.error(`❌ Passthrough error: ${err.message}`);
+  forwardReq.on("error", (e) => {
+    err(`Passthrough error: ${e.message}`);
     if (!res.headersSent) res.writeHead(502);
     res.end("Bad Gateway");
   });
@@ -174,96 +166,68 @@ async function passthrough(req, res, bodyBuffer) {
   forwardReq.end();
 }
 
-async function intercept(req, res, bodyBuffer, mappedModel) {
-  try {
-    const body = JSON.parse(bodyBuffer.toString());
-    body.model = mappedModel;
-
-    const response = await fetch(ROUTER_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      throw new Error(`9Router ${response.status}: ${errText}`);
-    }
-
-    const ct = response.headers.get("content-type") || "application/json";
-    const resHeaders = { "Content-Type": ct, "Cache-Control": "no-cache", "Connection": "keep-alive" };
-    if (ct.includes("text/event-stream")) resHeaders["X-Accel-Buffering"] = "no";
-    res.writeHead(200, resHeaders);
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) { res.end(); break; }
-      res.write(decoder.decode(value, { stream: true }));
-    }
-  } catch (error) {
-    console.error(`❌ ${error.message}`);
-    if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: { message: error.message, type: "mitm_error" } }));
-  }
-}
+// ── Request handler ───────────────────────────────────────────
 
 const server = https.createServer(sslOptions, async (req, res) => {
-  if (req.url === "/_mitm_health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true, pid: process.pid }));
-    return;
+  try {
+    if (req.url === "/_mitm_health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, pid: process.pid }));
+      return;
+    }
+
+    const bodyBuffer = await collectBodyRaw(req);
+    if (bodyBuffer.length > 0) saveRequestLog(req.url, bodyBuffer);
+
+    // Anti-loop: skip requests from 9Router
+    if (req.headers[INTERNAL_REQUEST_HEADER.name] === INTERNAL_REQUEST_HEADER.value) {
+      return passthrough(req, res, bodyBuffer);
+    }
+
+    const tool = getToolForHost(req.headers.host);
+    if (!tool) return passthrough(req, res, bodyBuffer);
+
+    const patterns = URL_PATTERNS[tool] || [];
+    const isChat = patterns.some(p => req.url.includes(p));
+    if (!isChat) return passthrough(req, res, bodyBuffer);
+
+    log(`🔍 [${tool}] url=${req.url} | bodyLen=${bodyBuffer.length}`);
+
+    // Cursor uses binary proto — model extraction not possible at this layer.
+    // Delegate directly to handler which decodes proto internally.
+    if (tool === "cursor") {
+      log(`⚡ intercept | cursor | proto`);
+      return handlers[tool].intercept(req, res, bodyBuffer, null, passthrough);
+    }
+
+    const model = extractModel(req.url, bodyBuffer);
+    log(`🔍 [${tool}] model="${model}"`);
+
+    const mappedModel = getMappedModel(tool, model);
+    if (!mappedModel) {
+      log(`⏩ passthrough | no mapping | ${tool} | ${model || "unknown"}`);
+      return passthrough(req, res, bodyBuffer);
+    }
+
+    log(`⚡ intercept | ${tool} | ${model} → ${mappedModel}`);
+    return handlers[tool].intercept(req, res, bodyBuffer, mappedModel, passthrough);
+  } catch (e) {
+    err(`Unhandled error: ${e.message}`);
+    if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: { message: e.message, type: "mitm_error" } }));
   }
-
-  const bodyBuffer = await collectBodyRaw(req);
-  if (bodyBuffer.length > 0) saveRequestLog(req.url, bodyBuffer);
-
-  // Anti-loop: requests originating from 9Router bypass interception
-  if (req.headers[INTERNAL_REQUEST_HEADER.name] === INTERNAL_REQUEST_HEADER.value) {
-    return passthrough(req, res, bodyBuffer);
-  }
-
-  const tool = getToolForHost(req.headers.host);
-  if (!tool) return passthrough(req, res, bodyBuffer);
-
-  // Check if this URL should be intercepted based on tool
-  const isChat = tool === "antigravity"
-    ? ANTIGRAVITY_URL_PATTERNS.some(p => req.url.includes(p))
-    : COPILOT_URL_PATTERNS.some(p => req.url.includes(p));
-
-  if (!isChat) return passthrough(req, res, bodyBuffer);
-
-  const model = extractModel(req.url, bodyBuffer);
-  console.log("Extracted model:",  model)
-  const mappedModel = getMappedModel(tool, model);
-
-  if (!mappedModel) return passthrough(req, res, bodyBuffer);
-
-  return intercept(req, res, bodyBuffer, mappedModel);
 });
 
-server.listen(LOCAL_PORT, () => {
-  console.log(`🚀 MITM ready on :${LOCAL_PORT}`);
-});
+server.listen(LOCAL_PORT, () => log(`🚀 Server ready on :${LOCAL_PORT}`));
 
-server.on("error", (error) => {
-  if (error.code === "EADDRINUSE") {
-    console.error(`❌ Port ${LOCAL_PORT} already in use`);
-  } else if (error.code === "EACCES") {
-    console.error(`❌ Permission denied for port ${LOCAL_PORT}`);
-  } else {
-    console.error(`❌ ${error.message}`);
-  }
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE") err(`Port ${LOCAL_PORT} already in use`);
+  else if (e.code === "EACCES") err(`Permission denied for port ${LOCAL_PORT}`);
+  else err(e.message);
   process.exit(1);
 });
 
-const shutdown = () => { server.close(() => process.exit(0)); };
+const shutdown = () => server.close(() => process.exit(0));
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
-if (process.platform === "win32") {
-  process.on("SIGBREAK", shutdown);
-}
+if (process.platform === "win32") process.on("SIGBREAK", shutdown);
