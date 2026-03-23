@@ -6,14 +6,8 @@ WORKDIR /app
 # copy dependency files first (better cache)
 COPY package.json package-lock.json* ./
 
-# install dependencies
-RUN if [ -f package-lock.json ]; then \
-      echo "Using npm ci"; \
-      npm ci --include=dev --no-audit --no-fund; \
-    else \
-      echo "No lockfile, using npm install"; \
-      npm install --no-audit --no-fund; \
-    fi
+# install dependencies - use npm install to avoid lock file version issues
+RUN npm install --no-audit --no-fund
 
 # copy source
 COPY . .
@@ -51,7 +45,7 @@ COPY --from=builder /app/node_modules/node-forge ./node_modules/node-forge
 RUN mkdir -p /app/data
 
 # Fix permissions at runtime (handles mounted volumes)
-RUN printf '#!/bin/sh\nchown -R node:node /app/data 2>/dev/null; exec su-exec node "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
+RUN printf '#!/bin/sh\necho "Setting permissions..."\nls -la /app/data 2>/dev/null || true\nchown -R node:node /app/data 2>/dev/null || true\nchmod -R 755 /app/data 2>/dev/null || true\necho "Permissions set"\nexec su-exec node "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
 RUN apk add --no-cache su-exec
 
 EXPOSE 20128

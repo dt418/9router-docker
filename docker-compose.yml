@@ -6,9 +6,9 @@ services:
     env_file:
       - .env
     environment:
-      - DATA_DIR=${DATA_DIR:-/var/lib/9router}
+      - DATA_DIR=/app/data
     volumes:
-      - ./data:${DATA_DIR:-/var/lib/9router}
+      - 9router-data:/app/data
     networks:
       - proxy
     labels:
@@ -27,3 +27,6 @@ services:
 networks:
   proxy:
     external: true
+
+volumes:
+  9router-data:

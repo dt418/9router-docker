@@ -1,4 +1,28 @@
-# Unreleased
+# 9Router Changelog
+
+## Fork Changes (dt418/9router-docker)
+
+### v0.3.60-dt418 (2026-03-23)
+
+#### Features
+- Merged upstream v0.3.60 from decolua/9router
+- Fixed tunnel feature: Updated to use Cloudflare Quick Tunnel (`trycloudflare.com`) instead of deprecated Cloudflare Tunnel token API
+- Updated tunnel worker URL to `https://9router.com/api/tunnel/register`
+
+#### Docker Fixes
+- Fixed permission issues with named Docker volume (`9router-data`)
+- Removed bind mount `./data` to prevent permission denied errors
+- Updated docker-compose.yml to use named volume for data persistence
+- Updated Dockerfile entrypoint to handle permissions correctly
+
+#### Build Fixes
+- Fixed npm install issues by using `npm install` instead of `npm ci` in Dockerfile
+
+---
+
+# Original 9Router Changelog
+
+## Unreleased
 
 ## Features
 - Added API key visibility toggle (eye icon) to Endpoint dashboard page for improved UX and security.
@@ -6,83 +30,81 @@
 # v0.2.66 (2026-02-06)
 
 ## Features
-- Added Cursor provider end-to-end support, including OAuth import flow and translator/executor integration (`137f315`, `0a026c7`).
-- Enhanced auth/settings flow with `requireLogin` control and `hasPassword` state handling in dashboard/login APIs (`249fc28`).
-- Improved usage/quota UX with richer provider limit cards, new quota table, and clearer reset/countdown display (`32aefe5`).
-- Added model support for custom providers in UI/combos/model selection (`a7a52be`).
+- Added Cursor provider end-to-end support, including OAuth import flow and translator/executor integration.
+- Enhanced auth/settings flow with `requireLogin` control and `hasPassword` state handling in dashboard/login APIs.
+- Improved usage/quota UX with richer provider limit cards, new quota table, and clearer reset/countdown display.
+- Added model support for custom providers in UI/combos/model selection.
 - Expanded model/provider catalog:
-  - Codex updates: GPT-5.3 support, translation fixes, thinking levels (`127475d`)
-  - Added Claude Opus 4.6 model (`e8aa3e2`)
-  - Added MiniMax Coding (CN) provider (`7c609d7`)
-  - Added iFlow Kimi K2.5 model (`9e357a7`)
-  - Updated CLI tools with Droid/OpenClaw cards and base URL visibility improvements (`a2122e3`)
-- Added auto-validation for provider API keys when saving settings (`b275dfd`).
-- Added Docker/runtime deployment docs and architecture documentation updates (`5e4a15b`).
+  - Codex updates: GPT-5.3 support, translation fixes, thinking levels
+  - Added Claude Opus 4.6 model
+  - Added MiniMax Coding (CN) provider
+  - Added iFlow Kimi K2.5 model
+  - Updated CLI tools with Droid/OpenClaw cards and base URL visibility improvements
+- Added auto-validation for provider API keys when saving settings.
+- Added Docker/runtime deployment docs and architecture documentation updates.
 
 ## Fixes
-- Improved local-network compatibility by allowing auth cookie flow over HTTP deployments (`0a394d0`).
-- Improved Antigravity quota/stream handling and Droid CLI compatibility behavior (`3c65e0c`, `c612741`, `8c6e3b8`).
-- Fixed GitHub Copilot model mapping/selection issues (`95fd950`).
-- Hardened local DB behavior with corrupt JSON recovery and schema-shape migration safeguards (`e6ef852`).
-- Fixed logout/login edge cases:
-  - Prevent unintended auto-login after logout (`49df3dc`)
-  - Avoid infinite loading on failed `/api/settings` responses (`01c9410`)
+- Improved local-network compatibility by allowing auth cookie flow over HTTP deployments.
+- Improved Antigravity quota/stream handling and Droid CLI compatibility behavior.
+- Fixed GitHub Copilot model mapping/selection issues.
+- Hardened local DB behavior with corrupt JSON recovery and schema-shape migration safeguards.
+- Fixed logout/login edge cases.
 
 # v0.2.56 (2026-02-04)
 
 ## Features
-- Added Anthropic-compatible provider support across providers API/UI flow (`da5bdef`).
-- Added provider icons to dashboard provider pages/lists (`60bd686`, `8ceb8f2`).
-- Enhanced usage tracking pipeline across response handlers/streams with buffered accounting improvements (`a33924b`, `df0e1d6`, `7881db8`).
+- Added Anthropic-compatible provider support across providers API/UI flow.
+- Added provider icons to dashboard provider pages/lists.
+- Enhanced usage tracking pipeline across response handlers/streams with buffered accounting improvements.
 
 ## Fixes
-- Fixed usage conversion and related provider limits presentation issues (`e6e44ac`).
+- Fixed usage conversion and related provider limits presentation issues.
 
 # v0.2.52 (2026-02-02)
 
 ## Features
-- Implemented Codex Cursor compatibility and Next.js 16 proxy migration updates (`e9b0a73`, `7b864a9`, `1c6dd6d`).
-- Added OpenAI-compatible provider nodes with CRUD/validation/test coverage in API and UI (`0a28f9f`).
-- Added token expiration and key-validity checks in provider test flow (`686585d`).
-- Added Kiro token refresh support in shared token refresh service (`f2ca6f0`).
-- Added non-streaming response translation support for multiple formats (`63f2da8`).
-- Updated Kiro OAuth wiring and auth-related UI assets/components (`31cc79a`).
+- Implemented Codex Cursor compatibility and Next.js 16 proxy migration updates.
+- Added OpenAI-compatible provider nodes with CRUD/validation/test coverage in API and UI.
+- Added token expiration and key-validity checks in provider test flow.
+- Added Kiro token refresh support in shared token refresh service.
+- Added non-streaming response translation support for multiple formats.
+- Updated Kiro OAuth wiring and auth-related UI assets/components.
 
 ## Fixes
-- Fixed cloud translation/request compatibility path (`c7219d0`).
-- Fixed Kiro auth modal/flow issues (`85b7bb9`).
-- Included Antigravity stability fixes in translator/executor flow (`2393771`, `8c37b39`).
+- Fixed cloud translation/request compatibility path.
+- Fixed Kiro auth modal/flow issues.
+- Included Antigravity stability fixes in translator/executor flow.
 
 # v0.2.43 (2026-01-27)
 
 ## Fixes
-- Fixed CLI tools model selection behavior (`a015266`).
-- Fixed Kiro translator request handling (`d3dd868`).
+- Fixed CLI tools model selection behavior.
+- Fixed Kiro translator request handling.
 
 # v0.2.36 (2026-01-19)
 
 ## Features
-- Added the Usage dashboard page and related usage stats components (`3804357`).
-- Integrated outbound proxy support in Open SSE fetch pipeline (`0943387`).
-- Improved OpenAI compatibility and build stability across endpoint/profile/providers flows (`d9b8e48`).
+- Added the Usage dashboard page and related usage stats components.
+- Integrated outbound proxy support in Open SSE fetch pipeline.
+- Improved OpenAI compatibility and build stability across endpoint/profile/providers flows.
 
 ## Fixes
-- Fixed combo fallback behavior (`e6ca119`).
-- Resolved SonarQube findings, Next.js image warnings, and build/lint cleanups (`7058b06`, `0848dd5`).
+- Fixed combo fallback behavior.
+- Resolved SonarQube findings, Next.js image warnings, and build/lint cleanups.
 
 # v0.2.31 (2026-01-18)
 
 ## Fixes
-- Fixed Kiro token refresh and executor behavior (`6b22b1f`, `1d481c2`).
-- Fixed Kiro request translation handling (`eff52f7`, `da15660`).
+- Fixed Kiro token refresh and executor behavior.
+- Fixed Kiro request translation handling.
 
 # v0.2.27 (2026-01-15)
 
 ## Features
-- Added Kiro provider support with OAuth flow (`26b61e5`).
+- Added Kiro provider support with OAuth flow.
 
 ## Fixes
-- Fixed Codex provider behavior (`26b61e5`).
+- Fixed Codex provider behavior.
 
 # v0.2.21 (2026-01-12)
 
