@@ -16,6 +16,12 @@
   [🇻🇳 Tiếng Việt](./i18n/README.vi.md) • [🇨🇳 中文](./i18n/README.zh-CN.md) • [🇯🇵 日本語](./i18n/README.ja-JP.md)
 </div>
 
+<!--
+last_updated: 2026-03-23
+version: 0.2.67
+status: current
+-->
+
 ---
 
 ## 🤔 Why 9Router?
@@ -486,41 +492,6 @@ Seamless translation between formats:
 | | Kiro | $0 | Unlimited | Claude free |
 
 **💡 Pro Tip:** Start with Gemini CLI (180K free/month) + iFlow (unlimited free) combo = $0 cost!
-
----
-
-### 📊 Understanding 9Router Costs & Billing
-
-**9Router Billing Reality:**
-
-✅ **9Router software = FREE forever** (open source, never charges)  
-✅ **Dashboard "costs" = Display/tracking only** (not actual bills)  
-✅ **You pay providers directly** (subscriptions or API fees)  
-✅ **FREE providers stay FREE** (iFlow, Kiro, Qwen = $0 unlimited)  
-❌ **9Router never sends invoices** or charges your card
-
-**How Cost Display Works:**
-
-The dashboard shows **estimated costs** as if you were using paid APIs directly. This is **not billing** - it's a comparison tool to show your savings.
-
-**Example Scenario:**
-```
-Dashboard Display:
-• Total Requests: 1,662
-• Total Tokens: 47M
-• Display Cost: $290
-
-Reality Check:
-• Provider: iFlow (FREE unlimited)
-• Actual Payment: $0.00
-• What $290 Means: Amount you SAVED by using free models!
-```
-
-**Payment Rules:**
-- **Subscription providers** (Claude Code, Codex): Pay them directly via their websites
-- **Cheap providers** (GLM, MiniMax): Pay them directly, 9Router just routes
-- **FREE providers** (iFlow, Kiro, Qwen): Genuinely free forever, no hidden charges
-- **9Router**: Never charges anything, ever
 
 ---
 
@@ -1030,12 +1001,12 @@ docker stop 9router && docker rm 9router
 | `JWT_SECRET` | `9router-default-secret-change-me` | JWT signing secret for dashboard auth cookie (**change in production**) |
 | `INITIAL_PASSWORD` | `123456` | First login password when no saved hash exists |
 | `DATA_DIR` | `~/.9router` | Main app database location (`db.json`) |
-| `PORT` | framework default | Service port (`20128` in examples) |
-| `HOSTNAME` | framework default | Bind host (Docker defaults to `0.0.0.0`) |
+| `PORT` | `20128` | Service port |
+| `HOSTNAME` | `0.0.0.0` | Bind host (Docker defaults to `0.0.0.0`) |
 | `NODE_ENV` | runtime default | Set `production` for deploy |
 | `BASE_URL` | `http://localhost:20128` | Server-side internal base URL used by cloud sync jobs |
 | `CLOUD_URL` | `https://9router.com` | Server-side cloud sync endpoint base URL |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:3000` | Backward-compatible/public base URL (prefer `BASE_URL` for server runtime) |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | Backward-compatible/public base URL (prefer `BASE_URL` for server runtime) |
 | `NEXT_PUBLIC_CLOUD_URL` | `https://9router.com` | Backward-compatible/public cloud URL (prefer `CLOUD_URL` for server runtime) |
 | `API_KEY_SECRET` | `endpoint-proxy-api-key-secret` | HMAC secret for generated API keys |
 | `MACHINE_ID_SALT` | `endpoint-proxy-salt` | Salt for stable machine ID hashing |
