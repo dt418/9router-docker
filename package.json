@@ -43,7 +43,7 @@
     "better-sqlite3": "^12.6.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
+    "@tailwindcss/postcss": "^4.2.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "postcss": "^8.5.6",
