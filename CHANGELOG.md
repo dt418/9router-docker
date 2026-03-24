@@ -2,7 +2,14 @@
 
 ## Fork Changes (dt418/9router-docker)
 
-### v0.3.61-dt418 (2026-03-24)
+### v0.3.61-dt418 (2026-03-25)
+
+#### Performance
+- Optimized Dockerfile: simplified to 2-stage build, consolidated entrypoint script
+- Optimized docker-compose.yml: improved restart policy, added resource limits (CPU+memory)
+
+#### Features
+- Added `docker-smoke-test` skill and script for automated Docker testing
 
 #### Security
 - Added JWT authentication to all protected API endpoints:
