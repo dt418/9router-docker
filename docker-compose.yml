@@ -1,59 +1,102 @@
 services:
   9router:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Build arguments for version info
+      args:
+        APP_VERSION: "0.3.61"
+    image: 9router:latest
     container_name: 9router
-    restart: unless-stopped
+    restart: on-failure:3
+    pull_policy: if_not_present
+    
+    # Environment configuration
     env_file:
       - .env
     environment:
       - DATA_DIR=/app/data
+      - NODE_ENV=production
+      
+    # Volume mounting for data persistence
     volumes:
       - 9router-data:/app/data
+      # Optional: mount logs for external access
+      # - ./logs:/app/logs
+    
+    # Network configuration
     networks:
       - proxy
+    
+    # Traefik routing configuration
     labels:
       - traefik.enable=true
       - traefik.managed=true
       - traefik.docker.network=proxy
 
-      # Router
+      # Main router with Authelia authentication
       - traefik.http.routers.9router.entrypoints=web
       - traefik.http.routers.9router.rule=Host(`9router.danhthanh.dev`)
       - traefik.http.routers.9router.middlewares=sslheader@docker,authelia@docker
       - traefik.http.routers.9router.service=9router
 
-      # Router for manifest and icons (no authelia - fix CORS error)
+      # Manifest and icons (no authelia - fix CORS for PWA)
       - traefik.http.routers.9router-manifest.entrypoints=web
       - traefik.http.routers.9router-manifest.rule=Host(`9router.danhthanh.dev`) && Path(`/manifest.webmanifest`)
       - traefik.http.routers.9router-manifest.middlewares=sslheader@docker
       - traefik.http.routers.9router-manifest.service=9router-manifest
 
-      # Router for icons (no authelia - allow PWA install)
+      # Icons (no authelia - allow PWA install)
       - traefik.http.routers.9router-icons.entrypoints=web
       - traefik.http.routers.9router-icons.rule=Host(`9router.danhthanh.dev`) && PathPrefix(`/icons`)
       - traefik.http.routers.9router-icons.middlewares=sslheader@docker
       - traefik.http.routers.9router-icons.service=9router
 
-      # Service
+      # Services
       - traefik.http.services.9router.loadbalancer.server.port=20128
       - traefik.http.services.9router-manifest.loadbalancer.server.port=20128
+
+    # Health check - match Dockerfile (checks /api/version for more thorough check)
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "-O", "/dev/null", "http://127.0.0.1:20128"]
+      test: ["CMD", "wget", "-q", "--spider", "-O", "/dev/null", "http://127.0.0.1:20128/api/version"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s
+      start_period: 15s
+    
+    # Resource management
     deploy:
       resources:
         limits:
+          cpus: '1'
           memory: 512M
         reservations:
+          cpus: '0.25'
           memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    
+    # Logging configuration
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+    # Security: read-only root filesystem (optional, uncomment if needed)
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+
+
+# Development override for local testing
+# Usage: docker compose --profile dev up
+# networks:
+#   proxy:
+#     external: true
 
 networks:
   proxy:
@@ -61,3 +104,22 @@ networks:
 
 volumes:
   9router-data:
+    driver: local
+
+# ============================================================
+# Secrets management (for production use)
+# ============================================================
+# secrets:
+#   jwt_secret:
+#     file: ./secrets/jwt_secret.txt
+#   db_password:
+#     file: ./secrets/db_password.txt
+#
+# In the service config, reference secrets:
+#   secrets:
+#     - jwt_secret
+#     - db_password
+#
+# In environment:
+#   - JWT_SECRET_FILE=/run/secrets/jwt_secret
+# ============================================================

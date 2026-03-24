@@ -1,69 +1,91 @@
-# -------- Builder --------
+# syntax=docker/dockerfile:1.4
+
+# ============================================================
+# STAGE 1: Builder - build the application
+# ============================================================
 FROM node:25-alpine AS builder
 
 WORKDIR /app
 
-# copy dependency files first (better cache)
+# Copy package files first for better layer caching
 COPY package.json package-lock.json* ./
 
-# install dependencies - use npm install to avoid lock file version issues
-RUN npm install --no-audit --no-fund && npm cache clean --force
+# Install ALL dependencies (including devDependencies for build)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
-# copy source
+# Copy source code
 COPY . .
 
-# build next standalone
+# Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-
-# -------- Runner --------
+# ============================================================
+# STAGE 2: Production Runner - minimal, secure image
+# ============================================================
 FROM node:25-alpine AS runner
 
 WORKDIR /app
 
-LABEL org.opencontainers.image.title="9router"
+LABEL org.opencontainers.image.title="9router" \
+      org.opencontainers.image.description="9Router - Local AI Router" \
+      org.opencontainers.image.version="0.3.61"
 
-ENV NODE_ENV=production
-ENV PORT=20128
-ENV HOSTNAME=0.0.0.0
-ENV NEXT_TELEMETRY_DISABLED=1
+# Set production environment
+ENV NODE_ENV=production \
+    PORT=20128 \
+    HOSTNAME=0.0.0.0 \
+    NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
+# Security: Create non-root user with specific UID/GID
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001 -G nodejs
 
-# runtime data dir
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+# Create directories with proper ownership
+RUN mkdir -p /app/data /app/logs && \
+    chown -R nextjs:nodejs /app
 
-# copy only runtime files
+# Copy only necessary files from builder
+# Using --chown for security (ownership set during copy)
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/open-sse ./open-sse
-# Next file tracing can omit sibling files; MITM runs server.js as a separate process.
 COPY --from=builder --chown=nextjs:nodejs /app/src/mitm ./src/mitm
-# Standalone node_modules may omit deps only required by the MITM child process.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/node-forge ./node_modules/node-forge
 
-RUN mkdir -p /app/data
+# Create entrypoint script for permission handling on startup
+COPY --chown=nextjs:nodejs <<'EOF' /entrypoint.sh
+#!/bin/sh
+set -e
 
-# Fix permissions at runtime (handles mounted volumes)
-RUN printf '#!/bin/sh\n\
-echo "Setting permissions..."\n\
-if [ -d /app/data ]; then\n\
-  chown -R nextjs:nodejs /app/data 2>/dev/null || true\n\
-  chmod -R 755 /app/data 2>/dev/null || true\n\
-fi\n\
-echo "Permissions set"\n\
-exec "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
+# Handle mounted volumes with proper permissions
+if [ -d /app/data ]; then
+    chown -R nextjs:nodejs /app/data 2>/dev/null || true
+    chmod -R 755 /app/data 2>/dev/null || true
+fi
 
+if [ -d /app/logs ]; then
+    chown -R nextjs:nodejs /app/logs 2>/dev/null || true
+    chmod -R 755 /app/logs 2>/dev/null || true
+fi
+
+# Execute the main process
+exec "$@"
+EOF
+RUN chmod +x /entrypoint.sh
+
+# Expose port
 EXPOSE 20128
 
-USER 1001
+# Switch to non-root user
+USER nextjs
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -q --spider -O /dev/null http://127.0.0.1:20128 || exit 1
+# Health check with more comprehensive testing
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget -q --spider -O /dev/null http://127.0.0.1:20128/api/version || exit 1
 
+# Entrypoint with startup script
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "server.js"]
