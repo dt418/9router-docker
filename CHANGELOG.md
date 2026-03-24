@@ -16,7 +16,10 @@
   - Created `serverAuth.js` helper for JWT token verification
   - Protected management APIs: providers, combos, proxy-pools, provider-nodes, keys, settings, pricing
   - Protected operational APIs: tunnel enable/disable, shutdown, CLI tools, translator
-- Rotated all secrets in `.env` (JWT_SECRET, INITIAL_PASSWORD, SUDO_PASSWORD, API_KEY_SECRET, MACHINE_ID_SALT)
+- Rotated all secrets in `.env` (JWT_SECRET, API_KEY_SECRET, MACHINE_ID_SALT)
+- Removed unused `SUDO_PASSWORD` from `.env` (not referenced in codebase)
+- Added `scripts/rotate-secrets.sh` - rotate security keys using openssl
+- Added `scripts/reset-password.sh` - reset INITIAL_PASSWORD with backup
 - Left public by design: `/api/v1/*` (AI proxy), `/api/auth/*`, `/api/models/*`, `/api/usage/*`
 
 ### v0.3.60-dt418 (2026-03-23)

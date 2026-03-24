@@ -39,6 +39,12 @@ npx vitest run --reporter=verbose  # Verbose output
 ./scripts/project-check.sh --full  # Build + Lint + Tests
 ```
 
+### Security Scripts
+```bash
+./scripts/rotate-secrets.sh        # Rotate JWT_SECRET, API_KEY_SECRET, MACHINE_ID_SALT
+./scripts/reset-password.sh        # Reset INITIAL_PASSWORD (default/random/custom)
+```
+
 ---
 
 ## 2. Project Overview
