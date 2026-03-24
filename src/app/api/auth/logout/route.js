@@ -8,7 +8,6 @@ export async function POST(request) {
   const forceSecureCookie = process.env.AUTH_COOKIE_SECURE === "true";
   const useSecureCookie = forceSecureCookie || isHttpsRequest;
 
-  cookieStore.delete("auth_token");
   cookieStore.set("auth_token", "", {
     httpOnly: true,
     secure: useSecureCookie,

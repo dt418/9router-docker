@@ -3,6 +3,8 @@ import { resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const openSsePath = resolve(__dirname, "../open-sse");
+const cloudPath = resolve(__dirname, "../cloud");
 
 export default defineConfig({
   test: {
@@ -12,10 +14,16 @@ export default defineConfig({
     // Suppress noisy console output from handlers under test
     silent: false,
   },
+  deps: {
+    inline: [
+      (id) => id.startsWith("open-sse") || id.startsWith("cloud"),
+    ],
+  },
   resolve: {
     alias: {
-      // Resolve open-sse/* imports to the actual local package
-      "open-sse": resolve(__dirname, "../open-sse"),
+      "open-sse": openSsePath,
+      "cloud": cloudPath,
     },
+    conditions: ["node"],
   },
 });

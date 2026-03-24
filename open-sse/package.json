@@ -1,0 +1,14 @@
+{
+  "name": "open-sse",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./services/model.js": "./services/model.js",
+    "./handlers/embeddingsCore.js": "./handlers/embeddingsCore.js",
+    "./utils/error.js": "./utils/error.js",
+    "./services/accountFallback.js": "./services/accountFallback.js",
+    "./config/runtimeConfig.js": "./config/runtimeConfig.js",
+    "./*": "./*.js",
+    "./*.js": "./*.js"
+  }
+}

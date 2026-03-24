@@ -13,19 +13,17 @@ export default function LoginPage() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("/api/settings", {
+        const res = await fetch("/api/auth/check", {
           cache: "no-store",
         });
-
         if (res.ok) {
-          const data = await res.json();
-          if (data.requireLogin === false) {
-            router.push("/dashboard");
-            router.refresh();
-          }
+          router.replace("/dashboard");
+          router.refresh();
         }
       } catch (err) {
-        console.error("Auth check failed:", err);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Auth check failed:", err);
+        }
       }
     }
     checkAuth();
