@@ -10,7 +10,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
 
 const CHANGELOG_PATH = join(projectRoot, 'CHANGELOG.md');
-const README_PATH = join(projectRoot, 'README.md');
 const DOCS_PATH = join(projectRoot, 'docs');
 
 const TYPE_MAPPING = {
@@ -91,7 +90,7 @@ function getCommits(from, to = 'HEAD') {
 
 function getLastChangelogVersion() {
   try {
-    const content = execSync(`git log --all --oneline --grep="^v" | head -1`, {
+    const content = execSync(`git log --oneline --grep="^v" | head -1`, {
       encoding: 'utf-8',
       cwd: projectRoot,
     });
@@ -159,14 +158,6 @@ async function updateChangelog(commits) {
   }
 
   return { content: changelogContent, version: newVersion };
-}
-
-async function updateReadme(commits) {
-  const hasDocsChanges = commits.some(c => c.type === 'docs');
-  if (!hasDocsChanges) return null;
-
-  const readmeContent = await readFile(README_PATH, 'utf-8');
-  return { content: readmeContent };
 }
 
 async function previewChanges(commits) {

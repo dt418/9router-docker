@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { cp, mkdir, readFile, writeFile, stat } from 'fs/promises';
+import { mkdir, writeFile, stat } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -10,7 +10,7 @@ const projectRoot = join(__dirname, '../..');
 const hooksDir = join(projectRoot, '.git', 'hooks');
 const sourceHooksDir = join(__dirname, 'hooks');
 
-async function installHook(hookName, sourcePath) {
+async function installHook(hookName) {
   const targetPath = join(hooksDir, hookName);
   const sourceHook = join(sourceHooksDir, hookName);
   
@@ -21,14 +21,7 @@ async function installHook(hookName, sourcePath) {
     return;
   }
 
-  const shebang = '#!/bin/sh';
-  const hookContent = await readFile(sourceHook, 'utf-8');
-  
-  if (!hookContent.startsWith(shebang)) {
-    await writeFile(targetPath, `#!/bin/sh\nnode "${join(__dirname, 'trigger.js')}" "$@"\n`, { mode: 0o755 });
-  } else {
-    await writeFile(targetPath, `#!/bin/sh\nnode "${join(__dirname, 'trigger.js')}" "$@"\n`, { mode: 0o755 });
-  }
+  await writeFile(targetPath, `#!/bin/sh\nnode "${join(__dirname, 'trigger.js')}" "$@"\n`, { mode: 0o755 });
   
   console.log(`  Installed ${hookName}`);
 }
