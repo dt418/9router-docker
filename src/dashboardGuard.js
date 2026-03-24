@@ -84,5 +84,8 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*"],
+  matcher: [
+    "/((?!login|api|_next|static|favicon|manifest).*)",
+    "/dashboard/:path*",
+  ],
 };

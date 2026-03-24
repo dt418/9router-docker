@@ -8,36 +8,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [hasPassword, setHasPassword] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     async function checkAuth() {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-
       try {
-        const res = await fetch(`${baseUrl}/api/settings`, {
-          signal: controller.signal,
+        const res = await fetch("/api/settings", {
+          cache: "no-store",
         });
-        clearTimeout(timeoutId);
 
         if (res.ok) {
           const data = await res.json();
           if (data.requireLogin === false) {
             router.push("/dashboard");
             router.refresh();
-            return;
           }
-          setHasPassword(!!data.hasPassword);
-        } else {
-          // Safe fallback on non-OK response to avoid infinite loading state.
-          setHasPassword(true);
         }
       } catch (err) {
-        clearTimeout(timeoutId);
-        setHasPassword(true);
+        console.error("Auth check failed:", err);
       }
     }
     checkAuth();
@@ -68,18 +56,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-  // Show loading state while checking password
-  if (hasPassword === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="text-text-muted mt-4">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg p-4">

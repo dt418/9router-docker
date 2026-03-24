@@ -49,7 +49,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/node-forge ./node_mo
 RUN mkdir -p /app/data
 
 # Fix permissions at runtime (handles mounted volumes)
-RUN printf '#!/bin/sh\necho "Setting permissions..."\nls -la /app/data 2>/dev/null || true\nchown -R nextjs:nodejs /app/data 2>/dev/null || true\nchmod -R 755 /app/data 2>/dev/null || true\necho "Permissions set"\nexec "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
+RUN printf '#!/bin/sh\n\
+echo "Setting permissions..."\n\
+if [ -d /app/data ]; then\n\
+  chown -R nextjs:nodejs /app/data 2>/dev/null || true\n\
+  chmod -R 755 /app/data 2>/dev/null || true\n\
+fi\n\
+echo "Permissions set"\n\
+exec "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 20128
 
