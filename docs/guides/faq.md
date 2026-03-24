@@ -51,4 +51,18 @@ Start with `if/kimi-k2-thinking` (free, fast). For higher quality, try `claude-s
 ### Provider auth issues?
 Some OAuth providers expire tokens. Reconnect from Dashboard → Providers.
 
+## Security
+
+### What endpoints are protected?
+Management APIs require authentication (JWT token):
+- `/api/providers`, `/api/combos`, `/api/proxy-pools`, `/api/provider-nodes`
+- `/api/settings`, `/api/pricing`, `/api/keys`
+- `/api/tunnel/enable`, `/api/tunnel/disable`, `/api/shutdown`
+- `/api/cli-tools/*`, `/api/translator/*`
+
+### What endpoints are public?
+- `/api/v1/*` - OpenAI-compatible AI proxy (by design)
+- `/api/auth/*` - Login/logout/check
+- `/api/models/*`, `/api/usage/*`, `/api/version`, `/api/tags`
+
 See also: [Troubleshooting](./troubleshooting.md)

@@ -2,6 +2,16 @@
 
 ## Fork Changes (dt418/9router-docker)
 
+### v0.3.61-dt418 (2026-03-24)
+
+#### Security
+- Added JWT authentication to all protected API endpoints:
+  - Created `serverAuth.js` helper for JWT token verification
+  - Protected management APIs: providers, combos, proxy-pools, provider-nodes, keys, settings, pricing
+  - Protected operational APIs: tunnel enable/disable, shutdown, CLI tools, translator
+- Rotated all secrets in `.env` (JWT_SECRET, INITIAL_PASSWORD, SUDO_PASSWORD, API_KEY_SECRET, MACHINE_ID_SALT)
+- Left public by design: `/api/v1/*` (AI proxy), `/api/auth/*`, `/api/models/*`, `/api/usage/*`
+
 ### v0.3.60-dt418 (2026-03-23)
 
 #### Features

@@ -522,11 +522,13 @@ Runtime visibility sources:
 
 ## Security-Sensitive Boundaries
 
-- JWT secret (`JWT_SECRET`) secures dashboard session cookie verification/signing
-- Initial password fallback (`INITIAL_PASSWORD`, default `123456`) must be overridden in real deployments
+- JWT secret (`JWT_SECRET`) secures dashboard session cookie and API route verification/signing
+- Initial password fallback (`INITIAL_PASSWORD`) must be overridden in real deployments
 - API key HMAC secret (`API_KEY_SECRET`) secures generated local API key format
 - Provider secrets (API keys/tokens) are persisted in local DB and should be protected at filesystem level
 - Cloud sync endpoints rely on API key auth + machine id semantics
+- Management APIs (`/api/providers`, `/api/combos`, `/api/settings`, etc.) require JWT authentication via `auth_token` cookie
+- Public APIs by design: `/api/v1/*` (AI proxy), `/api/auth/*`, `/api/models/*`, `/api/usage/*`
 
 ## Environment and Runtime Matrix
 
