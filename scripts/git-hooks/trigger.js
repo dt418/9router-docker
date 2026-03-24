@@ -12,7 +12,8 @@ function run() {
   return new Promise((resolve) => {
     const child = spawn('node', [docsSyncPath, '--hook', hookName, ...args], {
       stdio: 'inherit',
-      shell: true
+      shell: true,
+      env: { ...process.env, GIT_HOOK_MODE: '1' }
     });
     
     child.on('close', (code) => {

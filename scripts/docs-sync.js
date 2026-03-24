@@ -53,9 +53,33 @@ function parseCommit(commitLine) {
 }
 
 function getCommits(from, to = 'HEAD') {
-  const range = from ? `${from}..${to}` : to;
+  let range;
+  
+  if (from) {
+    range = `${from}..${to}`;
+  } else if (process.env.GIT_HOOK_MODE) {
+    range = `${to}~1..${to}`;
+    try {
+      const parentHash = execSync('git rev-parse HEAD~1', { encoding: 'utf-8', cwd: projectRoot }).trim();
+      range = `${parentHash}..${to}`;
+    } catch {
+      range = `${to}~1..${to}`;
+    }
+  } else {
+    const latestTag = execSync('git describe --tags --abbrev=0 2>/dev/null || echo ""', {
+      encoding: 'utf-8',
+      cwd: projectRoot,
+    }).trim();
+    
+    if (latestTag) {
+      range = `${latestTag}..${to}`;
+    } else {
+      range = `${to}~1..${to}`;
+    }
+  }
+  
   try {
-    const output = execSync(`git log ${range} --oneline --format="%H %s"`, {
+    const output = execSync(`git log ${range} --oneline --format="%H %s" -n 50`, {
       encoding: 'utf-8',
       cwd: projectRoot,
     });
