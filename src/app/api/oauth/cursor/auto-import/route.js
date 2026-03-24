@@ -150,9 +150,16 @@ export async function GET() {
     }
 
     if (!dbPath) {
+      const platform = process.platform;
+      if (platform !== "darwin" && platform !== "win32" && platform !== "linux") {
+        return NextResponse.json(
+          { found: false, error: "Unsupported platform" },
+          { status: 400 }
+        );
+      }
       return NextResponse.json({
         found: false,
-        error: `Cursor database not found. Checked locations:\n${candidates.join("\n")}\n\nMake sure Cursor IDE is installed and opened at least once.`,
+        error: `Cursor database not found in known ${platform === "darwin" ? "macOS" : platform === "win32" ? "Windows" : "Linux"} locations. Make sure Cursor IDE is installed and you are logged in.`,
       });
     }
 

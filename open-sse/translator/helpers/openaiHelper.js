@@ -47,6 +47,12 @@ export function filterToOpenAIFormat(body) {
         filteredContent.push({ type: "text", text: "" });
       }
       
+      // Flatten text-only arrays to string
+      const isTextOnly = filteredContent.every(b => b.type === "text");
+      if (isTextOnly) {
+        return { ...msg, content: filteredContent.map(b => b.text).join("\n") };
+      }
+      
       return { ...msg, content: filteredContent };
     }
     

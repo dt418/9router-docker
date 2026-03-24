@@ -20,9 +20,23 @@ services:
       - traefik.http.routers.9router.entrypoints=web
       - traefik.http.routers.9router.rule=Host(`9router.danhthanh.dev`)
       - traefik.http.routers.9router.middlewares=sslheader@docker,authelia@docker
+      - traefik.http.routers.9router.service=9router
+
+      # Router for manifest and icons (no authelia - fix CORS error)
+      - traefik.http.routers.9router-manifest.entrypoints=web
+      - traefik.http.routers.9router-manifest.rule=Host(`9router.danhthanh.dev`) && Path(`/manifest.webmanifest`)
+      - traefik.http.routers.9router-manifest.middlewares=sslheader@docker
+      - traefik.http.routers.9router-manifest.service=9router-manifest
+
+      # Router for icons (no authelia - allow PWA install)
+      - traefik.http.routers.9router-icons.entrypoints=web
+      - traefik.http.routers.9router-icons.rule=Host(`9router.danhthanh.dev`) && PathPrefix(`/icons`)
+      - traefik.http.routers.9router-icons.middlewares=sslheader@docker
+      - traefik.http.routers.9router-icons.service=9router
 
       # Service
       - traefik.http.services.9router.loadbalancer.server.port=20128
+      - traefik.http.services.9router-manifest.loadbalancer.server.port=20128
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "-O", "/dev/null", "http://127.0.0.1:20128"]
       interval: 30s

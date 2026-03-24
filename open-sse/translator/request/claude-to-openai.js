@@ -197,12 +197,13 @@ function convertClaudeMessage(msg) {
       return result;
     }
 
-    // Return content
+    // Return content - flatten text-only arrays to string
     if (parts.length > 0) {
-      return {
-        role,
-        content: parts.length === 1 && parts[0].type === "text" ? parts[0].text : parts
-      };
+      const isTextOnly = parts.every(p => p.type === "text");
+      if (isTextOnly) {
+        return { role, content: parts.map(p => p.text).join("\n") };
+      }
+      return { role, content: parts };
     }
     
     // Empty content array
