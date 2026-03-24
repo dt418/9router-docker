@@ -48,6 +48,9 @@ source/*
 .cursor/*
 docs/*
 !docs/ARCHITECTURE.md
+!docs/DIAGRAMS.md
+!docs/getting-started/
+!docs/guides/
 test/*
 bin/*
 open-sse/test/*
