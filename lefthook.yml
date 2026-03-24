@@ -1,6 +1,14 @@
 # lefthook.yml - Git hooks managed by lefthook
 # https://github.com/evilmartians/lefthook
 
+# Pre-commit hook: lint staged files
+pre-commit:
+  parallel: true
+  commands:
+    lint-staged:
+      glob: "*.{js,jsx,mjs}"
+      run: npx eslint --no-warn-ignored --no-cache {staged_files}
+
 # Commit-msg hook: validate commit message with commitlint
 commit-msg:
   commands:
