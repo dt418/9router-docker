@@ -165,15 +165,15 @@ Usage DB:
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Client as CLI/SDK Client
-    participant Route as /api/v1/chat/completions
-    participant Chat as src/sse/handlers/chat
-    participant Core as open-sse/handlers/chatCore
-    participant Model as Model Resolver
-    participant Auth as Credential Selector
-    participant Exec as Provider Executor
-    participant Prov as Upstream Provider
-    participant Stream as Stream Translator
+    participant Client as "CLI/SDK Client"
+    participant Route as "/api/v1/chat/completions"
+    participant Chat as "src/sse/handlers/chat"
+    participant Core as "open-sse/handlers/chatCore"
+    participant Model as "Model Resolver"
+    participant Auth as "Credential Selector"
+    participant Exec as "Provider Executor"
+    participant Prov as "Upstream Provider"
+    participant Stream as "Stream Translator"
     participant Usage as usageDb
 
     Client->>Route: POST /v1/chat/completions
@@ -244,12 +244,12 @@ Fallback decisions are driven by `open-sse/services/accountFallback.js` using st
 ```mermaid
 sequenceDiagram
     autonumber
-    participant UI as Dashboard UI
-    participant OAuth as /api/oauth/[provider]/[action]
-    participant ProvAuth as Provider Auth Server
+    participant UI as "Dashboard UI"
+    participant OAuth as "/api/oauth/[provider]/[action]"
+    participant ProvAuth as "Provider Auth Server"
     participant DB as localDb
-    participant Test as /api/providers/[id]/test
-    participant Exec as Provider Executor
+    participant Test as "/api/providers/[id]/test"
+    participant Exec as "Provider Executor"
 
     UI->>OAuth: GET authorize or device-code
     OAuth->>ProvAuth: create auth/device flow
@@ -276,11 +276,11 @@ Refresh during live traffic is executed inside `open-sse/handlers/chatCore.js` v
 ```mermaid
 sequenceDiagram
     autonumber
-    participant UI as Endpoint Page UI
-    participant Sync as /api/sync/cloud
+    participant UI as "Endpoint Page UI"
+    participant Sync as "/api/sync/cloud"
     participant DB as localDb
-    participant Cloud as External Cloud Sync
-    participant Claude as ~/.claude/settings.json
+    participant Cloud as "External Cloud Sync"
+    participant Claude as "~/.claude/settings.json"
 
     UI->>Sync: POST action=enable
     Sync->>DB: set cloudEnabled=true
