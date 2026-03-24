@@ -1,0 +1,2 @@
+#!/bin/sh
+node "$(dirname "$0")/../trigger.js" prepare-commit-msg "$1" "$2" "$3"

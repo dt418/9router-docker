@@ -1,0 +1,58 @@
+name: Docs Sync
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'open-sse/**'
+      - 'docs/**'
+      - 'CHANGELOG.md'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      from_ref:
+        description: 'From git ref (tag or commit)'
+        required: false
+        default: ''
+
+jobs:
+  docs-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run docs sync
+        id: sync
+        run: |
+          if [ -n "${{ github.event.inputs.from_ref }}" ]; then
+            node scripts/docs-sync.js --auto --from ${{ github.event.inputs.from_ref }}
+          else
+            node scripts/docs-sync.js --auto
+          fi
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --staged --quiet; then
+            echo "No documentation changes to commit"
+            exit 0
+          fi
+          
+          git add -A
+          git commit -m "docs: auto-sync documentation" || echo "Nothing to commit"
+          git push || echo "Push failed - likely no changes"
