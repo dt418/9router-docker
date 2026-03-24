@@ -71,50 +71,19 @@ Result: Never stop coding, minimal cost
 
 ## ⚡ Quick Start
 
-**1. Install globally:**
+See [Quick Start Guide](./docs/getting-started/quickstart.md) for detailed instructions.
 
 ```bash
 npm install -g 9router
 9router
 ```
 
-🎉 Dashboard opens at `http://localhost:20128`
+Then configure your CLI tool:
+- Endpoint: `http://localhost:20128/v1`
+- API Key: Copy from Dashboard → Endpoint
+- Model: `if/kimi-k2-thinking`
 
-**2. Connect a FREE provider (no signup needed):**
-
-Dashboard → Providers → Connect **Claude Code** or **Antigravity** → OAuth login → Done!
-
-**3. Use in your CLI tool:**
-
-```
-Claude Code/Codex/Gemini CLI/OpenClaw/Cursor/Cline Settings:
-  Endpoint: http://localhost:20128/v1
-  API Key: [copy from dashboard]
-  Model: if/kimi-k2-thinking
-```
-
-**That's it!** Start coding with FREE AI models.
-
-**Alternative: run from source (this repository):**
-
-This repository package is private (`9router-app`), so source/Docker execution is the expected local development path.
-
-```bash
-cp .env.example .env
-npm install
-PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
-```
-
-Production mode:
-
-```bash
-npm run build
-PORT=20128 HOSTNAME=0.0.0.0 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run start
-```
-
-Default URLs:
-- Dashboard: `http://localhost:20128/dashboard`
-- OpenAI-compatible API: `http://localhost:20128/v1`
+See also: [Installation Guide](./docs/getting-started/installation.md)
 
 ---
 
@@ -562,6 +531,8 @@ Access via: WhatsApp, Telegram, Slack, Discord, iMessage, Signal...
 ---
 
 ## ❓ Frequently Asked Questions
+
+See [FAQ Guide](./docs/guides/faq.md) for more detailed answers.
 
 <details>
 <summary><b>📊 Why does my dashboard show high costs?</b></summary>
@@ -1078,6 +1049,8 @@ Notes:
 ---
 
 ## 🐛 Troubleshooting
+
+See [Troubleshooting Guide](./docs/guides/troubleshooting.md) for more solutions.
 
 **"Language model did not provide messages"**
 - Provider quota exhausted → Check dashboard quota tracker
