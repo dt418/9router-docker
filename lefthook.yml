@@ -7,7 +7,16 @@ pre-commit:
   commands:
     lint-staged:
       glob: "*.{js,jsx,mjs}"
-      run: npx eslint --no-warn-ignored --no-cache {staged_files}
+      run: |
+        echo "Linting staged JavaScript/JSX files with ESLint..."
+        npx eslint --no-warn-ignored --no-cache {staged_files}
+        echo "ESLint linting completed."
+    mermaid-check:
+      glob: "docs/**/*.md"
+      run: |
+        echo "Validating Mermaid diagrams in staged Markdown files..."
+        npx mmdc -i {staged_files}
+        echo "Mermaid validation completed."
 
 # Commit-msg hook: validate commit message with commitlint
 commit-msg:

@@ -1,6 +1,6 @@
 # 9Router Architecture
 
-_Last updated: 2026-02-06_
+Last updated: 2026-02-06
 
 ## Executive Summary
 
