@@ -1,5 +1,9 @@
 # 9Router Changelog
 
+## v0.0.1 (2026-03-24)
+## Features
+- add secret rotation and password reset scripts
+
 ## Fork Changes (dt418/9router-docker)
 
 ### v0.3.61-dt418 (2026-03-25)
