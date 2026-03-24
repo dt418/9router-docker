@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { createProviderNode, getProviderNodes } from "@/models";
 import { OPENAI_COMPATIBLE_PREFIX, ANTHROPIC_COMPATIBLE_PREFIX } from "@/shared/constants/providers";
 import { generateId } from "@/shared/utils";
@@ -26,6 +27,11 @@ export async function GET() {
 
 // POST /api/provider-nodes - Create provider node
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { name, prefix, apiType, baseUrl, type } = body;

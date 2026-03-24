@@ -1,6 +1,7 @@
 "use server";
 
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs/promises";
@@ -75,6 +76,11 @@ export async function GET() {
 
 // POST - Backup old fields and write new settings
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { env } = await request.json();
     
@@ -145,7 +151,11 @@ const RESET_ENV_KEYS = [
 ];
 
 // DELETE - Reset settings (remove env fields)
-export async function DELETE() {
+export async function DELETE(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const settingsPath = getClaudeSettingsPath();
 

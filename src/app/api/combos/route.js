@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { getCombos, createCombo, getComboByName } from "@/lib/localDb";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,11 @@ export async function GET() {
 
 // POST /api/combos - Create new combo
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { name, models } = body;

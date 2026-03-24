@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { deleteApiKey, getApiKeyById, updateApiKey } from "@/lib/localDb";
 
 // GET /api/keys/[id] - Get single key
@@ -18,6 +19,11 @@ export async function GET(request, { params }) {
 
 // PUT /api/keys/[id] - Update key
 export async function PUT(request, { params }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -42,6 +48,11 @@ export async function PUT(request, { params }) {
 
 // DELETE /api/keys/[id] - Delete API key
 export async function DELETE(request, { params }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
 

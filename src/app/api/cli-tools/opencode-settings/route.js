@@ -1,6 +1,7 @@
 "use server";
 
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs/promises";
@@ -67,6 +68,11 @@ export async function GET() {
 
 // POST - Apply 9Router as openai-compatible provider
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { baseUrl, apiKey, model } = await request.json();
 
@@ -119,7 +125,11 @@ export async function POST(request) {
 }
 
 // DELETE - Remove 9Router provider from config
-export async function DELETE() {
+export async function DELETE(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const configPath = getConfigPath();
 

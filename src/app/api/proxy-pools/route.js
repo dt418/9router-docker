@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { createProxyPool, getProviderConnections, getProxyPools } from "@/models";
 
 function toBoolean(value) {
@@ -73,6 +74,11 @@ export async function GET(request) {
 
 // POST /api/proxy-pools - Create proxy pool
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const normalized = normalizeProxyPoolInput(body);

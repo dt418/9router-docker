@@ -1,6 +1,7 @@
 "use server";
 
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import {
   getMitmStatus,
   startServer,
@@ -54,6 +55,11 @@ export async function GET() {
 
 // POST - Start MITM server (cert + server, no DNS)
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { apiKey, sudoPassword } = await request.json();
     const pwd = getPassword(sudoPassword) || await loadEncryptedPassword() || "";
@@ -77,6 +83,10 @@ export async function POST(request) {
 
 // DELETE - Stop MITM server (removes all DNS first, then kills server)
 export async function DELETE(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await request.json().catch(() => ({}));
     const { sudoPassword } = body;
@@ -98,6 +108,10 @@ export async function DELETE(request) {
 
 // PATCH - Toggle DNS for a specific tool (enable/disable)
 export async function PATCH(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { tool, action, sudoPassword } = await request.json();
     const pwd = getPassword(sudoPassword) || await loadEncryptedPassword() || "";

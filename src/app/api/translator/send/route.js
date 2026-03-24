@@ -1,18 +1,25 @@
+import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/serverAuth";
 import { getProviderConnections } from "@/lib/localDb.js";
 import { getExecutor, refreshTokenByProvider } from "open-sse/index.js";
 
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { provider, model, body } = await request.json();
 
     if (!provider || !model || !body) {
-      return Response.json({ success: false, error: "provider, model, and body required" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "provider, model, and body required" }, { status: 400 });
     }
 
     const connections = await getProviderConnections({ provider });
     const connection = connections.find(c => c.isActive !== false);
     if (!connection) {
-      return Response.json({ success: false, error: `No active connection for provider: ${provider}` }, { status: 400 });
+      return NextResponse.json({ success: false, error: `No active connection for provider: ${provider}` }, { status: 400 });
     }
 
     const credentials = {
@@ -41,7 +48,7 @@ export async function POST(request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[Translator] Provider error ${response.status}:`, errorText.slice(0, 500));
-      return Response.json({ success: false, error: `Provider error: ${response.status}`, details: errorText }, { status: response.status });
+      return NextResponse.json({ success: false, error: `Provider error: ${response.status}`, details: errorText }, { status: response.status });
     }
 
     return new Response(response.body, {
@@ -53,6 +60,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("[Translator] Send error:", error);
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
