@@ -9,7 +9,14 @@
     "start": "NODE_ENV=production next start",
     "dev:bun": "bun --bun next dev --webpack --port 20128",
     "build:bun": "NODE_ENV=production bun --bun next build --webpack",
-    "start:bun": "NODE_ENV=production bun ./.next/standalone/server.js"
+    "start:bun": "NODE_ENV=production bun ./.next/standalone/server.js",
+    "docs:check": "node scripts/auto-docs.js --check",
+    "docs:preview": "node scripts/auto-docs.js --preview",
+    "docs:update": "node scripts/auto-docs.js --update",
+    "commit": "cz",
+    "commit:signed": "cz -s",
+    "hooks:install": "lefthook install",
+    "hooks:uninstall": "lefthook uninstall"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -43,10 +50,20 @@
     "better-sqlite3": "^12.6.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@tailwindcss/postcss": "^4.1.18",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "lefthook": "^2.1.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^4"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
   }
 }
