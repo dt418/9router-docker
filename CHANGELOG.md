@@ -1,6 +1,10 @@
 # 9Router Changelog
 
 ## v0.0.1 (2026-03-26)
+## Features
+- integrate validation utilities into API routes
+
+## v0.0.1 (2026-03-26)
 ## Fixes
 - remove Express patterns, use env var for memory threshold
 
