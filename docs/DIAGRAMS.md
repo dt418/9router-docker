@@ -13,18 +13,18 @@ graph TB
         BR[Browser Dashboard]
     end
 
-    subgraph Router[9Router (localhost:20128)]
+    subgraph Router["9Router (localhost:20128)"]
         MW[Middleware<br>JWT Auth Guard]
 
-        subgraph CompatAPI[Compatibility API  /v1/*]
+        subgraph CompatAPI["Compatibility API  /v1/*"]
             CHAT["/v1/chat/completions<br>OpenAI format"]
             MSG["/v1/messages<br>Claude format"]
             RESP["/v1/responses<br>Codex format"]
-            EMB[/v1/embeddings]
-            MOD[/v1/models]
+            EMB["/v1/embeddings"]
+            MOD["/v1/models"]
         end
 
-        subgraph Core[Routing Core (open-sse)]
+        subgraph Core["Routing Core (open-sse)"]
             DETECT[Format Detection]
             TRANS[Request Translator]
             EXEC[Provider Executor]
@@ -33,11 +33,11 @@ graph TB
         end
 
         subgraph MgmtAPI["Management API  /api/*"]
-            PROV[/api/providers]
-            OAUTH[/api/oauth/...]
-            USAGE[/api/usage]
-            SET[/api/settings]
-            COMBO[/api/combos]
+            PROV["/api/providers"]
+            OAUTH["/api/oauth/..."]
+            USAGE["/api/usage"]
+            SET["/api/settings"]
+            COMBO["/api/combos"]
         end
 
         subgraph Persist["Persistence"]
@@ -136,12 +136,12 @@ sequenceDiagram
         end
 
         Handler->>OSS: handleChatCore(body, creds, format)
-        OSS->>OSS: detectFormat() -> translateRequest()
+        OSS->>OSS: detectFormat then translateRequest
         OSS->>Upstream: HTTP request (provider format)
 
         alt Success
             Upstream-->>OSS: streaming SSE / JSON
-            OSS->>OSS: translateResponse() -> stream back
+            OSS->>OSS: translateResponse then stream back
             OSS-->>Client: Streamed response
             OSS->>DB: trackUsage(connectionId, tokens)
         else Error / Rate Limit
@@ -338,7 +338,7 @@ flowchart TD
 
     COOKIE -->|Yes| VERIFY[jose.jwtVerify<br>with JWT_SECRET]
     VERIFY -->|Valid| ALLOW([NextResponse.next])
-    VERIFY -->|Invalid / expired| LOGIN([Redirect -> /login])
+    VERIFY -->|Invalid / expired| LOGIN([Redirect to login])
 
     COOKIE -->|No| FETCH[GET /api/settings/require-login]
     FETCH --> REQLOGIN{requireLogin<br>= true?}
@@ -347,12 +347,12 @@ flowchart TD
 
     subgraph LoginFlow["Login Flow"]
         FORM[POST /api/auth/login<br>username + password] --> BCRYPT[bcrypt.compare<br>with stored hash]
-        BCRYPT -->|Match| SIGN[jose.SignJWT<br>-> set auth_token cookie]
+        BCRYPT -->|Match| SIGN[jose.SignJWT<br>set auth_token cookie]
         BCRYPT -->|No match| ERR401[401 Unauthorized]
     end
 
     subgraph APIKeyFlow["/v1/* API Key Check"]
-        V1REQ([/v1/* request]) --> SETTING{requireApiKey<br>in settings?}
+        V1REQ(["/v1/* request"]) --> SETTING{requireApiKey<br>in settings?}
         SETTING -->|Yes| KEYCHECK[Validate key format<br>sk-machineId-keyId-crc8]
         KEYCHECK -->|Valid| V1PASS([Proceed to handler])
         KEYCHECK -->|Invalid| ERR4012[401 Unauthorized]
@@ -380,14 +380,14 @@ flowchart TD
     WHICH -->|Others| RA[refreshAccessToken<br>generic flow]
 
     RC & RG & RQ & RCX & RI & RGH & RA --> MERGE[Merge new creds<br>with existing]
-    MERGE --> PERSIST[updateProviderCredentials<br>-> localDb]
+    MERGE --> PERSIST[updateProviderCredentials<br>to localDb]
     PERSIST --> COPILOT
 
     COPILOT -->|Yes| COPEXP{copilotToken<br>expires within 5 min?}
     COPILOT -->|No| GEMCHECK{Gemini /<br>Antigravity?}
 
     COPEXP -->|Yes| RCOP[refreshCopilotToken<br>with new accessToken]
-    RCOP --> PERSIST2[Update providerSpecificData<br>-> localDb]
+    RCOP --> PERSIST2[Update providerSpecificData<br>to localDb]
     COPEXP -->|No| GEMCHECK
 
     PERSIST2 --> GEMCHECK
@@ -402,24 +402,24 @@ flowchart TD
 
 ```mermaid
 graph TD
-    ROOT[src/app/layout.js<br>ThemeProvider + Stores] --> LOGIN[/login]
-    ROOT --> LANDING[/landing]
-    ROOT --> DLAYOUT[dashboard/layout.js<br>Sidebar + Header]
+    ROOT[src/app/layout.js<br>ThemeProvider + Stores] --> LOGIN["/login"]
+    ROOT --> LANDING["/landing"]
+    ROOT --> DLAYOUT["dashboard/layout.js<br>Sidebar + Header"]
 
-    DLAYOUT --> HOME[/dashboard<br>Overview]
-    DLAYOUT --> PROV[/dashboard/providers<br>Provider List]
-    DLAYOUT --> USAGE[/dashboard/usage<br>Usage & Charts]
-    DLAYOUT --> COMBO[/dashboard/combos<br>Fallback Combos]
-    DLAYOUT --> CLI[/dashboard/cli-tools<br>CLI Tool Setup]
-    DLAYOUT --> EP[/dashboard/endpoint<br>API Docs]
-    DLAYOUT --> TRANS[/dashboard/translator<br>Request Debugger]
-    DLAYOUT --> MITM[/dashboard/mitm<br>MITM Proxy]
-    DLAYOUT --> CONSOLE[/dashboard/console-log<br>Server Logs]
-    DLAYOUT --> QUOTA[/dashboard/quota<br>Rate Limits]
-    DLAYOUT --> PROFILE[/dashboard/profile<br>User Settings]
+    DLAYOUT --> HOME["/dashboard<br>Overview"]
+    DLAYOUT --> PROV["/dashboard/providers<br>Provider List"]
+    DLAYOUT --> USAGE["/dashboard/usage<br>Usage & Charts"]
+    DLAYOUT --> COMBO["/dashboard/combos<br>Fallback Combos"]
+    DLAYOUT --> CLI["/dashboard/cli-tools<br>CLI Tool Setup"]
+    DLAYOUT --> EP["/dashboard/endpoint<br>API Docs"]
+    DLAYOUT --> TRANS["/dashboard/translator<br>Request Debugger"]
+    DLAYOUT --> MITM["/dashboard/mitm<br>MITM Proxy"]
+    DLAYOUT --> CONSOLE["/dashboard/console-log<br>Server Logs"]
+    DLAYOUT --> QUOTA["/dashboard/quota<br>Rate Limits"]
+    DLAYOUT --> PROFILE["/dashboard/profile<br>User Settings"]
 
-    PROV --> NEWPROV[/dashboard/providers/new]
-    PROV --> EDITPROV[/dashboard/providers/:id]
+    PROV --> NEWPROV["/dashboard/providers/new"]
+    PROV --> EDITPROV["/dashboard/providers/:id"]
 
     USAGE --> UOV[OverviewCards]
     USAGE --> UCHART[UsageChart<br>Recharts]
@@ -445,14 +445,14 @@ graph LR
     subgraph Stores["src/store/"]
         TS[useThemeStore<br>theme: light or dark or system<br>to localStorage]
         US[useUserStore<br>user profile<br>loading / error]
-        PS[useProviderStore<br>providers[]<br>loading / error<br>fetchProviders]
-        NS[useNotificationStore<br>notifications[]<br>auto-dismiss<br>success/error/warning/info]
+        PS["useProviderStore<br>providers&#91;&#93;<br>loading / error<br>fetchProviders"]
+        NS["useNotificationStore<br>notifications&#91;&#93;<br>auto-dismiss<br>success/error/warning/info"]
     end
 
     subgraph APIs["Management APIs"]
-        AP[/api/providers]
-        AU[/api/auth]
-        AS[/api/settings]
+        AP["/api/providers"]
+        AU["/api/auth"]
+        AS["/api/settings"]
     end
 
     subgraph UI["Dashboard Components"]

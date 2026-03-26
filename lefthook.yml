@@ -15,7 +15,7 @@ pre-commit:
       glob: "docs/**/*.md"
       run: |
         echo "Validating Mermaid diagrams in staged Markdown files..."
-        npx mmdc -i {staged_files}
+        npx @probelabs/maid {staged_files}
         echo "Mermaid validation completed."
 
 # Commit-msg hook: validate commit message with commitlint

@@ -32,6 +32,22 @@ Implemented foundational utilities from `docs/fixes/` directory to improve secur
 | `src/app/api/provider-nodes/validate/route.js` | Integrated `isValidUrl` from validation module |
 | `src/app/api/providers/validate/route.js` | Integrated `validateApiKey` for API key validation |
 
+### Configuration Updates
+
+| File | Changes |
+|------|---------|
+| `lefthook.yml` | Updated mermaid-check to use `@probelabs/maid` instead of `mmdc` |
+| `package.json` | Added `@probelabs/maid` as devDependency for mermaid validation |
+
+## Mermaid Validation
+
+- **Tool**: `@probelabs/maid` (v0.0.29) - Fast, accurate Mermaid diagram validator
+- **Status**: All 17 diagrams validated successfully
+- **Files checked**:
+  - `docs/ARCHITECTURE.md` - 7 diagrams ✅
+  - `docs/DIAGRAMS.md` - 9 diagrams ✅
+  - `docs/mermaid-test.md` - 1 diagram ✅
+
 ## Review Fixes Applied
 
 1. **Removed Express.js patterns** - `errorHandler` and `asyncHandler` were removed because they use Express-style signatures incompatible with Next.js App Router
@@ -40,11 +56,14 @@ Implemented foundational utilities from `docs/fixes/` directory to improve secur
 
 3. **Integrated utilities** - Validation functions are now used in existing API routes to avoid duplicate code
 
+4. **Fixed mermaid parse error** - Replaced pipe (`|`) with "or" in node labels for GitHub compatibility
+
 ## Verification
 
 - ✅ Build: Successful
 - ✅ Tests: 96 passed
 - ✅ Lint: No errors
+- ✅ Mermaid: 17 diagrams validated
 
 ## Notes
 

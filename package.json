@@ -53,6 +53,7 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@mermaid-js/mermaid-cli": "^11.12.0",
+    "@probelabs/maid": "^0.0.29",
     "@tailwindcss/postcss": "^4.1.18",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
