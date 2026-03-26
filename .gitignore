@@ -51,6 +51,8 @@ docs/*
 !docs/DIAGRAMS.md
 !docs/getting-started/
 !docs/guides/
+!docs/reviews/
+!docs/fixes/
 test/*
 bin/*
 open-sse/test/*
