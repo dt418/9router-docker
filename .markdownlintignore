@@ -1,0 +1,6 @@
+# Ignore patterns for markdownlint
+node_modules/
+.next/
+dist/
+*.min.js
+*.min.css
