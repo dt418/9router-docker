@@ -443,7 +443,7 @@ graph TD
 ```mermaid
 graph LR
     subgraph Stores["src/store/"]
-        TS[useThemeStore<br>theme: light|dark|system<br>-> localStorage]
+        TS[useThemeStore<br>theme: light or dark or system<br>to localStorage]
         US[useUserStore<br>user profile<br>loading / error]
         PS[useProviderStore<br>providers[]<br>loading / error<br>fetchProviders]
         NS[useNotificationStore<br>notifications[]<br>auto-dismiss<br>success/error/warning/info]
