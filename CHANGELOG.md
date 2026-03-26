@@ -1,6 +1,10 @@
 # 9Router Changelog
 
 ## v0.0.1 (2026-03-26)
+## Features
+- implement core utilities from docs/fixes
+
+## v0.0.1 (2026-03-26)
 ## Fixes
 - resolve all ESLint warnings and apply React best practices
 
