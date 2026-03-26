@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 
+const MEMORY_WARNING_THRESHOLD = parseInt(process.env.HEALTH_MEMORY_THRESHOLD_MB || '500', 10) * 1024 * 1024;
+
 export async function GET() {
   const startTime = Date.now();
   const checks = {};
 
   const memoryUsage = process.memoryUsage();
   checks.memory = {
-    status: memoryUsage.heapUsed < 500 * 1024 * 1024 ? 'ok' : 'warning',
+    status: memoryUsage.heapUsed < MEMORY_WARNING_THRESHOLD ? 'ok' : 'warning',
     heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
     heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
     rss: Math.round(memoryUsage.rss / 1024 / 1024) + 'MB'
