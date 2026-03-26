@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isValidUrl, validateProviderNode } from "@/lib/validation";
 
 // Fetch with timeout wrapper
 const fetchWithTimeout = (url, options, timeout = 10000) => {
@@ -10,17 +11,7 @@ const fetchWithTimeout = (url, options, timeout = 10000) => {
   ]);
 };
 
-// Validate URL format
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-// Parse error details for user-friendly messages
+// Fetch with timeout wrapper
 const getErrorMessage = (error) => {
   if (error.cause?.code === "ECONNREFUSED") return "Connection refused - provider node offline or unreachable";
   if (error.cause?.code === "ENOTFOUND") return "DNS lookup failed - invalid domain or network issue";

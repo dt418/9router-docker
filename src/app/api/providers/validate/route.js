@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getProviderNodeById } from "@/models";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from "@/shared/constants/providers";
 import { getDefaultModel } from "open-sse/config/providerModels.js";
+import { validateApiKey } from "@/lib/validation";
 
 // POST /api/providers/validate - Validate API key with provider
 export async function POST(request) {
@@ -11,6 +12,11 @@ export async function POST(request) {
 
     if (!provider || !apiKey) {
       return NextResponse.json({ error: "Provider and API key required" }, { status: 400 });
+    }
+
+    const apiKeyValidation = validateApiKey(apiKey);
+    if (!apiKeyValidation.valid) {
+      return NextResponse.json({ error: apiKeyValidation.error }, { status: 400 });
     }
 
     let isValid = false;
