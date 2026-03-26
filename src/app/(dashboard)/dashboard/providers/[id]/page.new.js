@@ -1144,11 +1144,15 @@ function ConnectionRow({ connection, isOAuth, isFirst, isLast, onMoveUp, onMoveD
   // Use useState + useEffect for impure Date.now() to avoid calling during render
   const [isCooldown, setIsCooldown] = useState(false);
 
-  const modelLockUntil = Object.entries(connection)
-    .filter(([k]) => k.startsWith("modelLock_"))
-    .map(([, v]) => v)
-    .filter(v => v && new Date(v).getTime() > Date.now())
-    .sort()[0] || null;
+  // Extract lock keys and values once to avoid multiple iterations
+  const modelLockUntil = useMemo(() => {
+    const now = Date.now();
+    return Object.entries(connection)
+      .filter(([k]) => k.startsWith("modelLock_"))
+      .map(([, v]) => v)
+      .filter(v => v && new Date(v).getTime() > now)
+      .sort()[0] || null;
+  }, [connection]);
 
   useEffect(() => {
     const checkCooldown = () => {
@@ -1165,6 +1169,7 @@ function ConnectionRow({ connection, isOAuth, isFirst, isLast, onMoveUp, onMoveD
     return () => {
       if (interval) clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelLockUntil]);
 
   // Determine effective status (override unavailable if cooldown expired)

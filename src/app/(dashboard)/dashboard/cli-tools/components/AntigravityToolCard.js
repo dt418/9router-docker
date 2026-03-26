@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, Button, Badge, Modal, Input, ModelSelectModal } from "@/shared/components";
 import Image from "next/image";
 
@@ -37,6 +37,31 @@ export default function AntigravityToolCard({
     if (initialStatus) setStatus(initialStatus);
   }, [initialStatus]);
 
+  const loadSavedMappings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cli-tools/antigravity-mitm/alias?tool=antigravity");
+      if (res.ok) {
+        const data = await res.json();
+        const aliases = data.aliases || {};
+        if (Object.keys(aliases).length > 0) {
+          setModelMappings(aliases);
+        }
+      }
+    } catch (error) {
+      console.log("Error loading saved mappings:", error);
+    }
+  }, []);
+
+  const fetchModelAliases = useCallback(async () => {
+    try {
+      const res = await fetch("/api/models/alias");
+      const data = await res.json();
+      if (res.ok) setModelAliases(data.aliases || {});
+    } catch (error) {
+      console.log("Error fetching model aliases:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isExpanded && !status) {
       fetchStatus();
@@ -47,35 +72,9 @@ export default function AntigravityToolCard({
       loadSavedMappings();
       fetchModelAliases();
     }
-  }, [isExpanded]);
+  }, [isExpanded, status, fetchStatus, loadSavedMappings, fetchModelAliases]);
 
-  const loadSavedMappings = async () => {
-    try {
-      const res = await fetch("/api/cli-tools/antigravity-mitm/alias?tool=antigravity");
-      if (res.ok) {
-        const data = await res.json();
-        const aliases = data.aliases || {};
-
-        if (Object.keys(aliases).length > 0) {
-          setModelMappings(aliases);
-        }
-      }
-    } catch (error) {
-      console.log("Error loading saved mappings:", error);
-    }
-  };
-
-  const fetchModelAliases = async () => {
-    try {
-      const res = await fetch("/api/models/alias");
-      const data = await res.json();
-      if (res.ok) setModelAliases(data.aliases || {});
-    } catch (error) {
-      console.log("Error fetching model aliases:", error);
-    }
-  };
-
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/cli-tools/antigravity-mitm");
       if (res.ok) {
@@ -86,7 +85,7 @@ export default function AntigravityToolCard({
       console.log("Error fetching status:", error);
       setStatus({ running: false });
     }
-  };
+  }, []);
 
   // Windows uses UAC dialog, no sudo needed
   const isWindows = typeof navigator !== "undefined" && navigator.userAgent?.includes("Windows");

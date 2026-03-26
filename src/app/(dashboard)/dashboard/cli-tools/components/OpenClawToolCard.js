@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/components";
 import Image from "next/image";
 
@@ -50,15 +50,7 @@ export default function OpenClawToolCard({
     if (initialStatus) setOpenclawStatus(initialStatus);
   }, [initialStatus]);
 
-  useEffect(() => {
-    if (isExpanded && !openclawStatus) {
-      checkOpenclawStatus();
-      fetchModelAliases();
-    }
-    if (isExpanded) fetchModelAliases();
-  }, [isExpanded]);
-
-  const fetchModelAliases = async () => {
+  const fetchModelAliases = useCallback(async () => {
     try {
       const res = await fetch("/api/models/alias");
       const data = await res.json();
@@ -66,7 +58,28 @@ export default function OpenClawToolCard({
     } catch (error) {
       console.log("Error fetching model aliases:", error);
     }
-  };
+  }, []);
+
+  const checkOpenclawStatus = useCallback(async () => {
+    setCheckingOpenclaw(true);
+    try {
+      const res = await fetch("/api/cli-tools/openclaw-settings");
+      const data = await res.json();
+      setOpenclawStatus(data);
+    } catch (error) {
+      setOpenclawStatus({ installed: false, error: error.message });
+    } finally {
+      setCheckingOpenclaw(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isExpanded && !openclawStatus) {
+      checkOpenclawStatus();
+      fetchModelAliases();
+    }
+    if (isExpanded) fetchModelAliases();
+  }, [isExpanded, openclawStatus, checkOpenclawStatus, fetchModelAliases]);
 
   useEffect(() => {
     if (openclawStatus?.installed && !hasInitializedModel.current) {
@@ -84,19 +97,6 @@ export default function OpenClawToolCard({
       }
     }
   }, [openclawStatus, apiKeys]);
-
-  const checkOpenclawStatus = async () => {
-    setCheckingOpenclaw(true);
-    try {
-      const res = await fetch("/api/cli-tools/openclaw-settings");
-      const data = await res.json();
-      setOpenclawStatus(data);
-    } catch (error) {
-      setOpenclawStatus({ installed: false, error: error.message });
-    } finally {
-      setCheckingOpenclaw(false);
-    }
-  };
 
   const normalizeLocalhost = (url) => url.replace("://localhost", "://127.0.0.1");
 

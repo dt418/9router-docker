@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, Button, Badge, Input } from "@/shared/components";
 
 /**
@@ -25,11 +25,7 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
     }
   }, [apiKeys, selectedApiKey]);
 
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/cli-tools/antigravity-mitm");
       if (res.ok) {
@@ -40,7 +36,11 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
     } catch {
       setStatus({ running: false, certExists: false, dnsStatus: {} });
     }
-  };
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
 
   const handleAction = (action) => {
     if (isWindows || status?.hasCachedPassword) {
