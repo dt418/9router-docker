@@ -1,5 +1,22 @@
 # Troubleshooting
 
+## Mermaid Diagram Issues
+
+### "Unable to render rich display" error
+- This indicates a Mermaid syntax error in your markdown
+- Run validation locally: `npx @probelabs/maid docs/your-file.md`
+- Common fixes:
+  - Quote labels with special chars: `[text|desc]` → `["text|desc"]`
+  - Quote labels with parentheses: `[Name (desc)]` → `["Name (desc)"]`
+  - Quote labels with leading slash: `[/path]` → `["/path"]`
+  - Replace `->` with `-->` in arrows
+  - Escape brackets: `items[]` → `items&#91;&#93;`
+
+### Mermaid validation fails on commit
+- Install `@probelabs/maid`: `npm install -D @probelabs/maid`
+- Run validation: `npx @probelabs/maid docs/**/*.md`
+- Fix all errors before committing
+
 ## Connection Issues
 
 ### "Connection refused" error
