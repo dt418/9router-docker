@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/components";
 import Image from "next/image";
 
@@ -28,22 +28,7 @@ export default function OpenCodeToolCard({ tool, isExpanded, onToggle, baseUrl, 
     if (initialStatus) setStatus(initialStatus);
   }, [initialStatus]);
 
-  useEffect(() => {
-    if (isExpanded && !status) {
-      checkStatus();
-      fetchModelAliases();
-    }
-    if (isExpanded) fetchModelAliases();
-  }, [isExpanded]);
-
-  // Sync model from existing config
-  useEffect(() => {
-    if (status?.config?.model?.startsWith("9router/")) {
-      setSelectedModel(status.config.model.replace("9router/", ""));
-    }
-  }, [status]);
-
-  const fetchModelAliases = async () => {
+  const fetchModelAliases = useCallback(async () => {
     try {
       const res = await fetch("/api/models/alias");
       const data = await res.json();
@@ -51,7 +36,35 @@ export default function OpenCodeToolCard({ tool, isExpanded, onToggle, baseUrl, 
     } catch (error) {
       console.log("Error fetching model aliases:", error);
     }
-  };
+  }, []);
+
+  const checkStatus = useCallback(async () => {
+    setChecking(true);
+    try {
+      const res = await fetch("/api/cli-tools/opencode-settings");
+      const data = await res.json();
+      setStatus(data);
+    } catch (error) {
+      setStatus({ installed: false, error: error.message });
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isExpanded && !status) {
+      checkStatus();
+      fetchModelAliases();
+    }
+    if (isExpanded) fetchModelAliases();
+  }, [isExpanded, status, checkStatus, fetchModelAliases]);
+
+  // Sync model from existing config
+  useEffect(() => {
+    if (status?.config?.model?.startsWith("9router/")) {
+      setSelectedModel(status.config.model.replace("9router/", ""));
+    }
+  }, [status]);
 
   const getConfigStatus = () => {
     if (!status?.installed) return null;
@@ -69,19 +82,6 @@ export default function OpenCodeToolCard({ tool, isExpanded, onToggle, baseUrl, 
   };
 
   const getDisplayUrl = () => customBaseUrl || `${baseUrl}/v1`;
-
-  const checkStatus = async () => {
-    setChecking(true);
-    try {
-      const res = await fetch("/api/cli-tools/opencode-settings");
-      const data = await res.json();
-      setStatus(data);
-    } catch (error) {
-      setStatus({ installed: false, error: error.message });
-    } finally {
-      setChecking(false);
-    }
-  };
 
   const handleApply = async () => {
     setApplying(true);

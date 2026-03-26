@@ -1,5 +1,21 @@
 # 9Router Changelog
 
+## v0.0.2 (2026-03-26)
+
+#### Code Quality
+- Fixed all ESLint warnings/errors across the codebase:
+  - Fixed anonymous default exports (cursorChecksum, cursorProtobuf, postcss.config)
+  - Removed unused eslint-disable directives
+  - Replaced `<img>` with `<Image>` from next/image (BasicChatPageClient, ProviderTopology, ProviderIcon)
+  - Fixed missing useEffect dependencies (providers/[id]/page.js)
+  - Fixed impure function calls in useMemo (Date.now - page.new.js)
+  - Fixed setState in effect patterns (UsageTable, UsageStats, callback/page.js)
+  - Fixed memoization preserve errors (ProviderTopology)
+- Applied React best practices across 10+ dashboard components:
+  - Wrapped async functions in `useCallback` to prevent stale closures
+  - Added proper dependency arrays to useEffects
+  - Added `useRef` guards for one-time initialization
+
 ## v0.0.1 (2026-03-24)
 ## Features
 - add secret rotation and password reset scripts

@@ -1,6 +1,6 @@
 # 9Router Architecture
 
-_Last updated: 2026-02-06_
+Last updated: 2026-02-06
 
 ## Executive Summary
 
@@ -53,21 +53,21 @@ flowchart LR
     end
 
     subgraph Router[9Router Local Process]
-        API[V1 Compatibility API\n/v1/*]
-        DASH[Dashboard + Management API\n/api/*]
-        CORE[SSE + Translation Core\nopen-sse + src/sse]
+        API[V1 Compatibility API<br>/v1/*]
+        DASH[Dashboard + Management API<br>/api/*]
+        CORE[SSE + Translation Core<br>open-sse + src/sse]
         DB[(db.json)]
         UDB[(usage.json + log.txt)]
     end
 
     subgraph Upstreams[Upstream Providers]
-        P1[OAuth Providers\nClaude/Codex/Gemini/Qwen/iFlow/GitHub/Kiro/Cursor/Antigravity]
-        P2[API Key Providers\nOpenAI/Anthropic/OpenRouter/GLM/Kimi/MiniMax]
-        P3[Compatible Nodes\nOpenAI-compatible / Anthropic-compatible]
+        P1[OAuth Providers<br>Claude/Codex/Gemini/Qwen/iFlow/GitHub/Kiro/Cursor/Antigravity]
+        P2[API Key Providers<br>OpenAI/Anthropic/OpenRouter/GLM/Kimi/MiniMax]
+        P3[Compatible Nodes<br>OpenAI-compatible / Anthropic-compatible]
     end
 
     subgraph Cloud[Optional Cloud Sync]
-        CLOUD[Cloud Sync Endpoint\nNEXT_PUBLIC_CLOUD_URL]
+        CLOUD[Cloud Sync Endpoint<br>NEXT_PUBLIC_CLOUD_URL]
     end
 
     C1 --> API
@@ -392,7 +392,7 @@ flowchart LR
     end
 
     subgraph ContainerOrProcess[9Router Runtime]
-        Next[Next.js Server\nPORT=20128]
+        Next[Next.js Server<br>PORT=20128]
         Core[SSE Core + Executors]
         MainDB[(db.json)]
         UsageDB[(usage.json/log.txt)]

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/components";
 import Image from "next/image";
 
@@ -28,15 +28,7 @@ export default function CodexToolCard({ tool, isExpanded, onToggle, baseUrl, api
     if (initialStatus) setCodexStatus(initialStatus);
   }, [initialStatus]);
 
-  useEffect(() => {
-    if (isExpanded && !codexStatus) {
-      checkCodexStatus();
-      fetchModelAliases();
-    }
-    if (isExpanded) fetchModelAliases();
-  }, [isExpanded]);
-
-  const fetchModelAliases = async () => {
+  const fetchModelAliases = useCallback(async () => {
     try {
       const res = await fetch("/api/models/alias");
       const data = await res.json();
@@ -44,7 +36,28 @@ export default function CodexToolCard({ tool, isExpanded, onToggle, baseUrl, api
     } catch (error) {
       console.log("Error fetching model aliases:", error);
     }
-  };
+  }, []);
+
+  const checkCodexStatus = useCallback(async () => {
+    setCheckingCodex(true);
+    try {
+      const res = await fetch("/api/cli-tools/codex-settings");
+      const data = await res.json();
+      setCodexStatus(data);
+    } catch (error) {
+      setCodexStatus({ installed: false, error: error.message });
+    } finally {
+      setCheckingCodex(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isExpanded && !codexStatus) {
+      checkCodexStatus();
+      fetchModelAliases();
+    }
+    if (isExpanded) fetchModelAliases();
+  }, [isExpanded, codexStatus, checkCodexStatus, fetchModelAliases]);
 
   // Parse model from config content (don't sync URL - always use baseUrl from props)
   useEffect(() => {
@@ -70,19 +83,6 @@ export default function CodexToolCard({ tool, isExpanded, onToggle, baseUrl, api
   };
   
   const getDisplayUrl = () => customBaseUrl || `${baseUrl}/v1`;
-
-  const checkCodexStatus = async () => {
-    setCheckingCodex(true);
-    try {
-      const res = await fetch("/api/cli-tools/codex-settings");
-      const data = await res.json();
-      setCodexStatus(data);
-    } catch (error) {
-      setCodexStatus({ installed: false, error: error.message });
-    } finally {
-      setCheckingCodex(false);
-    }
-  };
 
   const handleApplySettings = async () => {
     setApplying(true);

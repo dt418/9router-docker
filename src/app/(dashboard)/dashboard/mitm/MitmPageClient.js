@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MITM_TOOLS } from "@/shared/constants/cliTools";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from "@/shared/constants/providers";
@@ -14,14 +14,7 @@ export default function MitmPageClient() {
   const [expandedTool, setExpandedTool] = useState(null);
   const [mitmStatus, setMitmStatus] = useState({ running: false, certExists: false, dnsStatus: {}, hasCachedPassword: false });
 
-  useEffect(() => {
-    fetchConnections();
-    fetchApiKeys();
-    fetchAliases();
-    fetchCloudSettings();
-  }, []);
-
-  const fetchConnections = async () => {
+  const fetchConnections = useCallback(async () => {
     try {
       const res = await fetch("/api/providers");
       if (res.ok) {
@@ -29,9 +22,9 @@ export default function MitmPageClient() {
         setConnections(data.connections || []);
       }
     } catch { /* ignore */ }
-  };
+  }, []);
 
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     try {
       const res = await fetch("/api/keys");
       if (res.ok) {
@@ -39,9 +32,9 @@ export default function MitmPageClient() {
         setApiKeys(data.keys || []);
       }
     } catch { /* ignore */ }
-  };
+  }, []);
 
-  const fetchAliases = async () => {
+  const fetchAliases = useCallback(async () => {
     try {
       const res = await fetch("/api/models/alias");
       if (res.ok) {
@@ -49,9 +42,9 @@ export default function MitmPageClient() {
         setModelAliases(data.aliases || {});
       }
     } catch { /* ignore */ }
-  };
+  }, []);
 
-  const fetchCloudSettings = async () => {
+  const fetchCloudSettings = useCallback(async () => {
     try {
       const res = await fetch("/api/settings");
       if (res.ok) {
@@ -59,7 +52,14 @@ export default function MitmPageClient() {
         setCloudEnabled(data.cloudEnabled || false);
       }
     } catch { /* ignore */ }
-  };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      await Promise.all([fetchConnections(), fetchApiKeys(), fetchAliases(), fetchCloudSettings()]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getActiveProviders = () => connections.filter(c => c.isActive !== false);
 

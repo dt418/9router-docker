@@ -214,6 +214,7 @@ export default function UsageStats() {
   // Fetch filtered stats via REST when period changes
   useEffect(() => {
     // First load: show full spinner; subsequent: show subtle fetching indicator
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!stats) setLoading(true);
     else setFetching(true);
 

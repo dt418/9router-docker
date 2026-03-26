@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/components";
 import Image from "next/image";
 
@@ -53,15 +53,7 @@ export default function DroidToolCard({
     if (initialStatus) setDroidStatus(initialStatus);
   }, [initialStatus]);
 
-  useEffect(() => {
-    if (isExpanded && !droidStatus) {
-      checkDroidStatus();
-      fetchModelAliases();
-    }
-    if (isExpanded) fetchModelAliases();
-  }, [isExpanded]);
-
-  const fetchModelAliases = async () => {
+  const fetchModelAliases = useCallback(async () => {
     try {
       const res = await fetch("/api/models/alias");
       const data = await res.json();
@@ -69,7 +61,28 @@ export default function DroidToolCard({
     } catch (error) {
       console.log("Error fetching model aliases:", error);
     }
-  };
+  }, []);
+
+  const checkDroidStatus = useCallback(async () => {
+    setCheckingDroid(true);
+    try {
+      const res = await fetch("/api/cli-tools/droid-settings");
+      const data = await res.json();
+      setDroidStatus(data);
+    } catch (error) {
+      setDroidStatus({ installed: false, error: error.message });
+    } finally {
+      setCheckingDroid(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isExpanded && !droidStatus) {
+      checkDroidStatus();
+      fetchModelAliases();
+    }
+    if (isExpanded) fetchModelAliases();
+  }, [isExpanded, droidStatus, checkDroidStatus, fetchModelAliases]);
 
   useEffect(() => {
     if (droidStatus?.installed && !hasInitializedModel.current) {
@@ -83,19 +96,6 @@ export default function DroidToolCard({
       }
     }
   }, [droidStatus, apiKeys]);
-
-  const checkDroidStatus = async () => {
-    setCheckingDroid(true);
-    try {
-      const res = await fetch("/api/cli-tools/droid-settings");
-      const data = await res.json();
-      setDroidStatus(data);
-    } catch (error) {
-      setDroidStatus({ installed: false, error: error.message });
-    } finally {
-      setCheckingDroid(false);
-    }
-  };
 
   const getEffectiveBaseUrl = () => {
     const url = customBaseUrl || baseUrl;

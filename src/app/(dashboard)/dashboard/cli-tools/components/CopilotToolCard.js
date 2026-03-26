@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/components";
 import Image from "next/image";
 
@@ -18,6 +18,7 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
   const [modelInput, setModelInput] = useState("");
   const [modelList, setModelList] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const hasInitializedModelList = useRef(false);
 
   useEffect(() => {
     if (apiKeys?.length > 0 && !selectedApiKey) {
@@ -29,25 +30,7 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
     if (initialStatus) setStatus(initialStatus);
   }, [initialStatus]);
 
-  useEffect(() => {
-    if (isExpanded && !status) {
-      checkStatus();
-      fetchModelAliases();
-    }
-    if (isExpanded) fetchModelAliases();
-  }, [isExpanded]);
-
-  // Pre-fill model list from existing config
-  useEffect(() => {
-    if (status?.config && Array.isArray(status.config) && modelList.length === 0) {
-      const entry = status.config.find((e) => e.name === "9Router");
-      if (entry?.models?.length > 0) {
-        setModelList(entry.models.map((m) => m.id));
-      }
-    }
-  }, [status]);
-
-  const fetchModelAliases = async () => {
+  const fetchModelAliases = useCallback(async () => {
     try {
       const res = await fetch("/api/models/alias");
       const data = await res.json();
@@ -55,7 +38,39 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
     } catch (error) {
       console.log("Error fetching model aliases:", error);
     }
-  };
+  }, []);
+
+  const checkStatus = useCallback(async () => {
+    setChecking(true);
+    try {
+      const res = await fetch("/api/cli-tools/copilot-settings");
+      const data = await res.json();
+      setStatus(data);
+    } catch (error) {
+      setStatus({ installed: false, error: error.message });
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isExpanded && !status) {
+      checkStatus();
+      fetchModelAliases();
+    }
+    if (isExpanded) fetchModelAliases();
+  }, [isExpanded, status, checkStatus, fetchModelAliases]);
+
+  // Pre-fill model list from existing config
+  useEffect(() => {
+    if (status?.config && Array.isArray(status.config) && !hasInitializedModelList.current) {
+      hasInitializedModelList.current = true;
+      const entry = status.config.find((e) => e.name === "9Router");
+      if (entry?.models?.length > 0) {
+        setModelList(entry.models.map((m) => m.id));
+      }
+    }
+  }, [status]);
 
   const getConfigStatus = () => {
     if (!status) return null;
@@ -76,19 +91,6 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
   };
 
   const removeModel = (id) => setModelList((prev) => prev.filter((m) => m !== id));
-
-  const checkStatus = async () => {
-    setChecking(true);
-    try {
-      const res = await fetch("/api/cli-tools/copilot-settings");
-      const data = await res.json();
-      setStatus(data);
-    } catch (error) {
-      setStatus({ error: error.message });
-    } finally {
-      setChecking(false);
-    }
-  };
 
   const handleApply = async () => {
     setApplying(true);

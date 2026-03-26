@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Button, ModelSelectModal, ManualConfigModal, Tooltip } from "@/shared/components";
 import Image from "next/image";
 
@@ -57,13 +57,36 @@ export default function ClaudeToolCard({
     if (initialStatus) setClaudeStatus(initialStatus);
   }, [initialStatus]);
 
+  const fetchModelAliases = useCallback(async () => {
+    try {
+      const res = await fetch("/api/models/alias");
+      const data = await res.json();
+      if (res.ok) setModelAliases(data.aliases || {});
+    } catch (error) {
+      console.log("Error fetching model aliases:", error);
+    }
+  }, []);
+
+  const checkClaudeStatus = useCallback(async () => {
+    setCheckingClaude(true);
+    try {
+      const res = await fetch("/api/cli-tools/claude-settings");
+      const data = await res.json();
+      setClaudeStatus(data);
+    } catch (error) {
+      setClaudeStatus({ installed: false, error: error.message });
+    } finally {
+      setCheckingClaude(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isExpanded && !claudeStatus) {
       checkClaudeStatus();
       fetchModelAliases();
     }
     if (isExpanded) fetchModelAliases();
-  }, [isExpanded]);
+  }, [isExpanded, claudeStatus, checkClaudeStatus, fetchModelAliases]);
 
   useEffect(() => {
     fetch("/api/settings").then(r => r.json()).then(data => {
@@ -79,16 +102,6 @@ export default function ClaudeToolCard({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ccFilterNaming: value }),
     }).catch(() => {});
-  };
-
-  const fetchModelAliases = async () => {
-    try {
-      const res = await fetch("/api/models/alias");
-      const data = await res.json();
-      if (res.ok) setModelAliases(data.aliases || {});
-    } catch (error) {
-      console.log("Error fetching model aliases:", error);
-    }
   };
 
   useEffect(() => {
@@ -112,19 +125,6 @@ export default function ClaudeToolCard({
       }
     }
   }, [claudeStatus, apiKeys, tool.defaultModels, onModelMappingChange]);
-
-  const checkClaudeStatus = async () => {
-    setCheckingClaude(true);
-    try {
-      const res = await fetch("/api/cli-tools/claude-settings");
-      const data = await res.json();
-      setClaudeStatus(data);
-    } catch (error) {
-      setClaudeStatus({ installed: false, error: error.message });
-    } finally {
-      setCheckingClaude(false);
-    }
-  };
 
   const getEffectiveBaseUrl = () => {
     const url = customBaseUrl || baseUrl;

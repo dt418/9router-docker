@@ -17,11 +17,7 @@ export default function CombosPage() {
   const [comboStrategies, setComboStrategies] = useState({});
   const { copied, copy } = useCopyToClipboard();
 
-  useEffect(() => {
-    fetchData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [combosRes, providersRes, settingsRes] = await Promise.all([
         fetch("/api/combos"),
@@ -42,7 +38,11 @@ export default function CombosPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleCreate = async (data) => {
     try {
@@ -347,19 +347,18 @@ function ComboFormModal({ isOpen, combo, onClose, onSave, activeProviders }) {
   const [nameError, setNameError] = useState("");
   const [modelAliases, setModelAliases] = useState({});
 
-  const fetchModalData = async () => {
-    try {
-      const aliasesRes = await fetch("/api/models/alias");
-      if (!aliasesRes.ok) return;
-      const aliasesData = await aliasesRes.json();
-      setModelAliases(aliasesData.aliases || {});
-    } catch (error) {
-      console.error("Error fetching modal data:", error);
-    }
-  };
-
   useEffect(() => {
-    if (isOpen) fetchModalData();
+    if (!isOpen) return;
+    (async () => {
+      try {
+        const aliasesRes = await fetch("/api/models/alias");
+        if (!aliasesRes.ok) return;
+        const aliasesData = await aliasesRes.json();
+        setModelAliases(aliasesData.aliases || {});
+      } catch (error) {
+        console.error("Error fetching modal data:", error);
+      }
+    })();
   }, [isOpen]);
 
   const validateName = (value) => {

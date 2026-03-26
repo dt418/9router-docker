@@ -100,7 +100,6 @@ function normalizeProxyUrl(proxyUrl) {
   if (!normalizedInput) return null;
 
   try {
-    // eslint-disable-next-line no-new
     new URL(normalizedInput);
     return normalizedInput;
   } catch {

@@ -4,7 +4,7 @@
 
 ```mermaid
 graph TB
-    subgraph Clients["Client Tools"]
+    subgraph Clients[Client Tools]
         CC[Claude Code]
         CX[Codex CLI]
         GC[Gemini CLI]
@@ -13,18 +13,18 @@ graph TB
         BR[Browser Dashboard]
     end
 
-    subgraph Router["9Router (localhost:20128)"]
-        MW["Middleware<br>JWT Auth Guard"]
+    subgraph Router[9Router (localhost:20128)]
+        MW[Middleware<br>JWT Auth Guard]
 
-        subgraph CompatAPI["Compatibility API  /v1/*"]
-            CHAT[/v1/chat/completions<br>OpenAI format]
-            MSG[/v1/messages<br>Claude format]
-            RESP[/v1/responses<br>Codex format]
+        subgraph CompatAPI[Compatibility API  /v1/*]
+            CHAT["/v1/chat/completions<br>OpenAI format"]
+            MSG["/v1/messages<br>Claude format"]
+            RESP["/v1/responses<br>Codex format"]
             EMB[/v1/embeddings]
             MOD[/v1/models]
         end
 
-        subgraph Core["Routing Core (open-sse)"]
+        subgraph Core[Routing Core (open-sse)]
             DETECT[Format Detection]
             TRANS[Request Translator]
             EXEC[Provider Executor]
@@ -168,7 +168,7 @@ flowchart TD
 
     LOOP_COMBO --> CREDS{Get credentials<br>for provider}
     CREDS -->|No accounts available| ERRALL([Return 503: All accounts unavailable])
-    CREDS -->|Got credentials| REFRESH[Check &amp; refresh<br>expiring token]
+    CREDS -->|Got credentials| REFRESH[Check & refresh<br>expiring token]
     REFRESH --> CALL[Call upstream provider]
 
     CALL --> OK{Success?}
@@ -408,7 +408,7 @@ graph TD
 
     DLAYOUT --> HOME[/dashboard<br>Overview]
     DLAYOUT --> PROV[/dashboard/providers<br>Provider List]
-    DLAYOUT --> USAGE[/dashboard/usage<br>Usage &amp; Charts]
+    DLAYOUT --> USAGE[/dashboard/usage<br>Usage & Charts]
     DLAYOUT --> COMBO[/dashboard/combos<br>Fallback Combos]
     DLAYOUT --> CLI[/dashboard/cli-tools<br>CLI Tool Setup]
     DLAYOUT --> EP[/dashboard/endpoint<br>API Docs]
